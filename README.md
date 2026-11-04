@@ -112,8 +112,11 @@ sh install.sh                # Linux, macOS, or Git Bash on Windows
 On Windows, from PowerShell: `powershell -ExecutionPolicy Bypass -File install.ps1`.
 Then open Herdr and pick **Settings › Layout › Over9k** (or, if it's running,
 `herdr-app do layout.switch '{"name":"over9k"}'`). **Over9k help & options**
-walks you through picking your projects folder. To update, run the installer
-again from a newer copy; your settings and lists stay.
+walks you through picking your projects folder. To update: installed from a git
+clone, **Over9k help & options** shows an Update chip when there's a newer
+version, with what changed and an Update button (it pulls and installs again;
+turn the check off in Options › Folders). Otherwise run the installer again from
+a newer copy. Either way your settings and lists stay.
 
 **Just the parts you want.** Each mod above also works on its own in your own
 layout: `sh install.sh over9k-todo` (on Windows, `install.ps1 -Mod over9k-todo`),

@@ -130,6 +130,22 @@ fi
 say "Installing Over9k into $home_dir"
 mkdir -p "$mods_dir" "$home_dir/layouts"
 
+# Where the layout came from, for Over9k help & options' Update (over9k-footer
+# checks it for newer commits): this folder, and its commit and branch when
+# it's a git clone of its own (else null). Written before the mods are copied:
+# Herdr reloads them as they land, and the footer's check then reads this one.
+if [ "$layout" = yes ]; then
+  root=$(cd "$(dirname "$0")" && pwd -P) commit="" branch=""
+  if command -v git >/dev/null 2>&1 && [ "$(cd "$(git -C "$root" rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null && pwd -P)" = "$root" ]; then
+    commit=$(git -C "$root" rev-parse HEAD 2>/dev/null || true)
+    branch=$(git -C "$root" symbolic-ref --short -q HEAD 2>/dev/null || true)
+  fi
+  command -v cygpath >/dev/null 2>&1 && root=$(cygpath -m "$root")
+  json() { [ -n "$1" ] && printf '"%s"' "$(printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g')" || printf null; }
+  data="${XDG_DATA_HOME:-$HOME/.local/share}/over9k"; mkdir -p "$data"
+  printf '{"path": %s, "commit": %s, "branch": %s}\n' "$(json "$root")" "$(json "$commit")" "$(json "$branch")" > "$data/source.json"
+fi
+
 # The mods. Files the mods write themselves aren't replaced on an update.
 for d in "$here"/mods/*/; do
   name=$(basename "$d") dest="$mods_dir/$name"
@@ -197,4 +213,5 @@ say "  1. Open Herdr (or restart it), then Settings › Layout › Over9k."
 if herdr-app status >/dev/null 2>&1; then say "     It's running: herdr-app do layout.switch '{\"name\":\"over9k\"}' switches now."; fi
 say "  2. Over9k help & options is at the bottom of the sidebar: pick your projects"
 say "     folder, then what each row shows."
-say "  Update: pull or download a newer copy and run this again. Remove: sh install.sh --uninstall"
+say "  Update: installed from a git clone, Over9k help & options offers each update;"
+say "  else get a newer copy and run this again. Remove: sh install.sh --uninstall"

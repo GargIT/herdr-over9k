@@ -13,7 +13,7 @@ import { props, closeOverlay, openOverlay, theme, shared, setShared, home, appHo
 
 export const DEFAULTS = { keepUpToDate: false, handoffRule: false, todos: true, todoLog: true, todoSync: false, timeline: true, claudeStatus: false, agyStatus: false, todoFile: false, layout: "expanded", model: true, effort: true, context: true, since: true, cache: true, github: true, dirty: true, sync: true, prs: true,
   subModel: true, subEffort: true, subContext: true, subTime: true,
-  usage: true, usageClaude: true, usageCodex: true, usageGemini: true };
+  usage: true, usageClaude: true, usageCodex: true, usageGemini: true, checkUpdates: true };
 // The To-do panel (over9k-todos) and the `todo` command agents use.
 const TODO_ITEMS = [
   ["todos", "To-do", "The To-do panel, and agents keeping each project's list: the rule in CLAUDE.md and AGENTS.md, the todo command (~/.local/bin) and Claude Code's note on each message. Log and Sync are switched per project in the panel's header"],
@@ -57,6 +57,17 @@ const USAGE_ITEMS = [
 const HANDOFF_SCRIPT = ".local/share/over9k/handoff.sh";
 // What Hand off project work does (on this computer or another).
 const HANDOFF = "Chats outside a project pass project work to a new agent in it. Adds a rule to CLAUDE.md and AGENTS.md";
+// Update ($1 the clone Over9k was installed from, $2 its branch, $3 Herdr's
+// home): pull only if it's a fast-forward (local changes stop it, and say so),
+// then install.sh again. Settings, lists and Claude Code's settings stay as
+// they are; Herdr reloads the mods as they land.
+const UPDATE = `{
+  cd "$1" || exit 1
+  b=$(git symbolic-ref --short -q HEAD)
+  [ "$b" = "$2" ] || { echo "$1 is on \${b:-no branch}, not $2. Switch it back to $2, or update it yourself."; exit 1; }
+  export GIT_TERMINAL_PROMPT=0 GIT_SSH_COMMAND="\${GIT_SSH_COMMAND:-ssh -o BatchMode=yes -o ConnectTimeout=10}"
+  git pull -q --no-rebase --ff-only origin "$2" && sh ./install.sh --yes --no-claude --home "$3"
+} 2>&1`;
 // The setup's wider scan (as the + menu's): git repos up to two levels under
 // home, and folders Claude Code has worked in.
 const MORE = `{
@@ -201,6 +212,8 @@ export default class SidebarOptions extends View {
       .child(place("projects", "Projects"))
       .when(!m, (el) => el.child(check(["keepUpToDate", "Add new projects automatically", "Off: add them from + \u203a Add spaces"])))
       .child(m ? this.remoteHandoff(t, o, m) : check(["handoffRule", "Hand off project work", HANDOFF]))
+      // The footer's look for a newer Over9k (the Update chip, the notice above).
+      .when(!m && !this.setup, (el) => el.child(group("Updates", null)).child(check(["checkUpdates", "Check for updates", "Every few hours, from the folder you installed from"])))
       // Setup mode: the spaces to pin, then Done (the view settings stay in Options).
       .when(Boolean(this.setup), (el) => el.child(this.spacesGroup(t, group, cx)));
   }
@@ -459,6 +472,45 @@ export default class SidebarOptions extends View {
     return { ...DEFAULTS, ...(shared("sidebar.options") ?? {}) };
   }
 
+  // A newer Over9k where it was installed from (the footer looks: shared
+  // "over9k.update"): how many changes, what they are (each commit's subject,
+  // newest first), and Update. A failed update shows why here.
+  updateCard(t) {
+    const u = shared("over9k.update") ?? {};
+    const log = (u.log ?? []).slice(0, 8), more = u.behind - log.length;
+    const lines = (this.updateError ?? "").split("\n").filter(Boolean).slice(-8);
+    return v_flex().id("update").flex_none().mt(14).p(12).gap(4).rounded(8).border_1().border_color(t.accent + "66").bg(t.accent + "14")
+      .child(h_flex().gap(10).pb(2).items_center()
+        .child(div().flex_1().min_w(0).font_semibold().child(`Update available \u00b7 ${u.behind} change${u.behind === 1 ? "" : "s"}`))
+        .child(h_flex().id("update-now").h(26).px(12).flex_none().rounded(7).items_center().bg(t.solid).text_color(t.solid_foreground)
+          .when(!this.updating, (el) => el.cursor_pointer().hover((s) => s.opacity(0.88)).on_click((_e, cx) => this.update(u, cx)))
+          .when(Boolean(this.updating), (el) => el.opacity(0.7))
+          .child(this.updating ? "Updating\u2026" : "Update")))
+      .children(log.map((s, i) => h_flex().id(`update-${i}`).gap(7).text_size(12).text_color(t.muted)
+        .child(div().flex_none().text_color(t.dim).child("\u2022")).child(div().flex_1().min_w(0).truncate().child(s))))
+      .when(more > 0, (el) => el.child(div().pl(14).text_size(11.5).text_color(t.dim).child(`and ${more} more`)))
+      .when(lines.length > 0, (el) => el.child(v_flex().mt(6).p(8).rounded(6).bg(t.background).text_size(11.5).text_color(t.ansi1)
+        .child(div().text_color(t.foreground).child("Couldn't update:"))
+        .children(lines.map((l) => div().child(l)))));
+  }
+
+  // Pulls and installs the newer Over9k (UPDATE). Herdr reloads the mods as
+  // they land, this one too, so the shared state and the note go first.
+  update(u, cx) {
+    this.updating = true;
+    this.updateError = null;
+    cx.notify();
+    cx.spawn(async (cx) => {
+      const r = await exec("sh", ["-c", UPDATE, "sh", u.path, u.branch, appHome()]).catch((e) => ({ code: 1, stdout: String(e) }));
+      if (r?.code === 0) {
+        setShared("over9k.update", { behind: 0, checked: Date.now() });
+        notify({ title: "Over9k updated", body: "Already running: no restart needed.", level: "success" });
+      } else this.updateError = (r?.stdout || r?.stderr || "").trim() || "It stopped without saying why.";
+      this.updating = false;
+      cx.notify();
+    });
+  }
+
   render(cx) {
     const t = theme();
     const o = { ...DEFAULTS, ...(shared("sidebar.options") ?? {}) };
@@ -473,6 +525,8 @@ export default class SidebarOptions extends View {
         .child(div().text_size(15).font_semibold().child(this.setup ? "Set up Over9k" : "Over9k"))
         .child(h_flex().flex_1().gap(2).pl(8).when(!this.setup, (el) => el.child(tab("options", "Options")).child(tab("help", "Help"))))
         .child(div().text_size(11).text_color(t.dim).child("Esc")))
+      // A newer Over9k (not in setup): above Options and Help alike.
+      .when(!this.setup && o.checkUpdates && shared("over9k.update")?.behind > 0, (el) => el.child(this.updateCard(t)))
       // The navigator (not in setup), then the page, which scrolls when it's long.
       .child(h_flex().flex_1().min_h(0).pt(14).gap(18).items_start()
         .when(!this.setup, (el) => el.child(this.nav(t)))

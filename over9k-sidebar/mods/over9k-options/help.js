@@ -316,6 +316,21 @@ export function helpTopics(view, t) {
           space("my-app", BLUE),
           agent("Fix the footer", { status: spinner(), info: facts("Opus 5.5", pct(6)) })), [
           note("A chat outside your projects passes project work to a new agent in that project. Turn it on in Options"),
+        ]),
+      topic("Updates",
+        side(
+          frame(h_flex().h(28).px(8).gap(9).items_center().text_color(t.muted)
+            .child(icon(`${CHROME}/panel-left.svg`, 14, t.muted)).child("Over9k help & options")
+            .child(div().ml_auto().flex_none().px(5).py(1).rounded(4).bg(t.ansi1 + "26").text_size(10.5).text_color(t.ansi1).child("Update"))),
+          v_flex().flex_none().p(10).gap(3).rounded(8).border_1().border_color(t.accent + "66").bg(t.accent + "14").text_size(12)
+            .child(h_flex().gap(10).items_center().child(div().flex_1().font_semibold().text_color(t.foreground).child("Update available \u00b7 2 changes"))
+              .child(h_flex().h(22).px(10).flex_none().rounded(6).items_center().bg(t.solid).text_size(11.5).text_color(t.solid_foreground).child("Update")))
+            .child(div().text_color(t.muted).child("\u2022  Fix: the footer on mobile"))
+            .child(div().text_color(t.muted).child("\u2022  Help: an Updates page"))), [
+          line(div().flex_none().px(5).py(1).rounded(4).bg(t.ansi1 + "26").text_size(10.5).text_color(t.ansi1).child("Update"),
+            "A newer Over9k where you installed it from (a git clone)"),
+          line(button("Update", true), "Pulls it and installs it again. Settings and lists stay"),
+          note("Turn the check off in Options \u203a Folders"),
         ])),
   ].flat();
 }

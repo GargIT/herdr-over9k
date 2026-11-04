@@ -133,6 +133,30 @@ if ($Uninstall) {
 Say "Installing Over9k into $HerdrHome"
 New-Item -ItemType Directory -Force -Path $modsDir, $layoutsDir | Out-Null
 
+# Where the layout came from, for Over9k help & options' Update (over9k-footer
+# checks it for newer commits): this folder (forward slashes, as sh and git take
+# it), and its commit and branch when it's a git clone of its own (else null).
+# Written before the mods are copied: Herdr reloads them as they land, and the
+# footer's check then reads this one.
+if ($isLayout) {
+  $root = (Resolve-Path $PSScriptRoot).Path -replace '\\', '/'
+  $commit = $null; $branch = $null
+  if (Get-Command git -ErrorAction SilentlyContinue) {
+    try {
+      $top = (& git -C $root rev-parse --show-toplevel 2>$null)
+      if ($LASTEXITCODE -eq 0 -and $top -and ($top.TrimEnd('/') -eq $root.TrimEnd('/'))) {
+        $commit = (& git -C $root rev-parse HEAD 2>$null)
+        $branch = (& git -C $root symbolic-ref --short -q HEAD 2>$null)
+        if (-not $branch) { $branch = $null }
+      }
+    } catch { $commit = $null; $branch = $null }
+  }
+  $dataHome = if ($env:XDG_DATA_HOME) { $env:XDG_DATA_HOME } else { Join-Path $env:USERPROFILE ".local\share" }
+  $data = Join-Path $dataHome "over9k"
+  New-Item -ItemType Directory -Force -Path $data | Out-Null
+  WriteJson (Join-Path $data "source.json") ([ordered]@{ path = $root; commit = $commit; branch = $branch })
+}
+
 # The mods. Files the mods write themselves aren't replaced on an update.
 foreach ($m in $packageMods) {
   $dest = Join-Path $modsDir $m.Name
@@ -215,4 +239,5 @@ Say "Next:"
 Say "  1. Open Herdr (or restart it), then Settings > Layout > Over9k."
 Say "  2. Over9k help & options is at the bottom of the sidebar: pick your projects"
 Say "     folder, then what each row shows."
-Say "  Update: get a newer copy and run this again. Remove: install.ps1 -Uninstall"
+Say "  Update: installed from a git clone, Over9k help & options offers each update;"
+Say "  else get a newer copy and run this again. Remove: install.ps1 -Uninstall"

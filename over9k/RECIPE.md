@@ -51,7 +51,9 @@ Left to right. All colours are theme names (`canvas`, `chrome`, `background`,
     background, `accent` text), the reset time in `dim`, the used percentage
     coloured green, yellow or red, and a chevron.
   - **Footer**, 97px (`over9k-footer`): Settings, Over9k help & options, and
-    Add machine, each 30px with a 14px icon.
+    Add machine, each 30px with a 14px icon. A newer Over9k adds an
+    "Update" badge like the usage plan's (10.5px `ansi1` on a faint `ansi1`), at the right end of
+    Over9k help & options; on the rail, a 6px `ansi1` dot.
 - **Work column**, filling the rest:
   - **Tabs**, 42px (`over9k-tabs`, a copy of Herdr's own tab bar): the space's
     tabs as pills, each with its program's icon, status and a close ×, then a +.
@@ -135,6 +137,14 @@ Left to right. All colours are theme names (`canvas`, `chrome`, `background`,
     screen every 2s, so they match the CLI exactly.
 - **Usage:** click a row to show every limit as a 3px bar, with its reset time.
   The block resizes to fit.
+- **Updates:** the installer saves where it ran from in
+  `~/.local/share/over9k/source.json` (the folder, and its commit and branch if
+  it's a git clone). The footer fetches that branch on start and every 6 hours
+  (Options › Folders › Check for updates) and puts the new commits' subjects in
+  shared `over9k.update`. Help & options then shows "Update available · N
+  changes", the list, and Update: `git pull --ff-only`, then
+  `install.sh --yes --no-claude`. Herdr reloads the mods as they land, so no
+  restart. If the pull can't fast-forward (local changes), the card says why.
 
 ## Built from
 
