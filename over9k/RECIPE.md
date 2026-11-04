@@ -10,6 +10,14 @@ every row is yours to customise.
 
 ![Over9k](preview.png)
 
+Its six parts, each also shared on its own:
+
+| | |
+|---|---|
+| ![Over9k Sidebar](previews/over9k-sidebar.png) **Sidebar:** every project and every agent, in one list | ![Over9k Launcher](previews/over9k-launcher.png) **Launcher:** start, resume, run local |
+| ![Over9k To-do](previews/over9k-todo.png) **To-do:** agentic to-dos | ![Over9k Timeline](previews/over9k-timeline.png) **Timeline:** what happened, prompt by prompt |
+| ![Over9k Usage](previews/over9k-usage.png) **Usage:** your limits before you hit them | ![Over9k Switcher](previews/over9k-switcher.png) **Switcher:** Ctrl+Tab between agents |
+
 ## What you see
 
 Left to right. All colours are theme names (`canvas`, `chrome`, `background`,

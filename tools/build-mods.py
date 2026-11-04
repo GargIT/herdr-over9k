@@ -3,7 +3,8 @@
 # source): each folder at the repo's top (over9k-todo/, ...) gets mods/<name>/
 # copies, a mod.json that docks it on its own, the scripts it needs and its
 # keys.json. RECIPE.md and preview.png in each folder are written by hand and
-# never touched here. Run it after changing anything under over9k/mods:
+# never touched here; the previews are copied into over9k/previews/ for the
+# layout's RECIPE.md. Run it after changing anything under over9k/mods:
 #   python3 tools/build-mods.py
 import json, os, shutil, sys
 
@@ -83,6 +84,13 @@ def main():
         elif os.path.exists(keys):
             os.remove(keys)
         print(f"{share}: {', '.join(spec['mods'])}")
+    # Each mod's picture, also in the layout's folder, for its RECIPE.md.
+    pics = os.path.join(ROOT, "over9k", "previews")
+    os.makedirs(pics, exist_ok=True)
+    for share in SHARES:
+        src = os.path.join(ROOT, share, "preview.png")
+        if os.path.exists(src):
+            shutil.copy2(src, os.path.join(pics, f"{share}.png"))
 
 
 main()
