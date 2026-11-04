@@ -10,29 +10,31 @@ in=$(cat)
 # Its title: agy's own, else its summary's (agy often sends null), as agy-title.sh.
 title=$(printf '%s' "$in" | sh "$(dirname "$0")/agy-title.sh")
 [ "$title" = Antigravity ] && title=""
-# The line itself (under agy's own, which names the model), in the same format as
-# Over9k's Claude Code line: context, then the 5-hour and weekly limits per model
-# group (agy's quota buckets: gemini-*, and 3p-* for Claude and GPT), each used %
-# coloured (green, yellow from 50%, red from 80%) and the time to reset dimmed;
-# the group the current model draws on is in bold. Sections 3 spaces apart.
+# The line itself (under agy's own), in the same order as Over9k's Claude Code
+# line: model and effort, context, then the 5-hour and weekly limits of the group
+# the current model draws on (agy's quota buckets: gemini-*, and 3p-* for Claude
+# and GPT), then the other group's, named. Each used % coloured (green, yellow
+# from 50%, red from 80%), the time to reset dimmed; sections 3 spaces apart.
 printf '%s' "$in" | jq -r '
   def left: (. // 0) as $s | if $s <= 0 then "now"
     elif $s < 3600 then "\($s / 60 | floor)m"
     elif $s < 86400 then "\($s / 3600 | floor)h \($s % 3600 / 60 | floor)m"
     else "\($s / 86400 | floor)d \($s % 86400 / 3600 | floor)h" end;
-  def pct: ((1 - (.remaining_fraction // 1)) * 100) as $u
-    | (if $u >= 80 then "31" elif $u >= 50 then "33" else "32" end) as $c | "\u001b[\($c)m\($u | round)%\u001b[0m";
-  def dim: "\u001b[2m\(.)\u001b[0m";
-  def bucket($q; $k; $label): $q[$k] // empty | "\($label) \(pct) \("· \(.reset_in_seconds | left)" | dim)";
   def color: (if . >= 80 then "31" elif . >= 50 then "33" else "32" end) as $c | "\u001b[\($c)m\(round)%\u001b[0m";
-  (.context_window.used_percentage // null) as $ctx
-  | (.quota // {}) as $q
-  | ((.model.display_name // "") | test("^Gemini"; "i")) as $gem
-  | [["gemini", "Gemini", $gem], ["3p", "Claude/GPT", ($gem | not)]]
-  | map(. as [$p, $name, $mine]
-      | [bucket($q; "\($p)-5h"; "5h"), bucket($q; "\($p)-weekly"; "week")] | select(length > 0)
-      | (if $mine then "\u001b[1m\($name)\u001b[0m" else $name end) + " " + join("   "))
-  | [($ctx | select(. != null) | "context \(color)")] + .
+  def dim: "\u001b[2m\(.)\u001b[0m";
+  def bucket($q; $k; $label): $q[$k] // empty
+    | "\($label) \((1 - (.remaining_fraction // 1)) * 100 | color) " + ("· \(.reset_in_seconds | left)" | dim);
+  def limits($q; $p): [bucket($q; "\($p)-5h"; "5h"), bucket($q; "\($p)-weekly"; "week")];
+  (.quota // {}) as $q
+  | (.model.display_name // "") as $dn
+  | ($dn | capture(" *\\((?<e>Low|Medium|High|Xhigh|Max|Minimal)\\)$").e // null | if . then ascii_downcase else null end) as $pe
+  | ($dn | sub(" *\\((Low|Medium|High|Xhigh|Max|Minimal)\\)$"; "")) as $name
+  | ($dn | test("^Gemini"; "i")) as $gem
+  | (if $gem then ["gemini", "3p", "Claude/GPT"] else ["3p", "gemini", "Gemini"] end) as [$mine, $other, $otherName]
+  | [ ([$name, (.model.effort // $pe)] | map(select(. != null and . != "")) | join(" · ") | select(. != "")),
+      (.context_window.used_percentage // empty | "context \(color)"),
+      limits($q; $mine)[],
+      (limits($q; $other) | select(length > 0) | "\($otherName) " + join("   ")) ]
   | join("   ")' 2>/dev/null
 # The limits and plan for the sidebar's usage section (over9k-usage).
 u="$HOME/.cache/over9k/usage"; mkdir -p "$u"
