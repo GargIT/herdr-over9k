@@ -205,7 +205,7 @@ Left to right. All colours are theme names (`canvas`, `chrome`, `background`,
   `gen_metadata`, `conversation_summaries.db`): model, effort, title, last
   change. Context only comes from its optional status line.
 - Claude's plan limits are never in a file; Claude Code only hands them to a
-  status line. Options › Status lines › Claude Code (off by default) puts in
+  status line. Options › Footers › Claude Code footer (off by default) puts in
   `over9k/claude-statusline.sh`, which shows model, effort, context, cache and
   limits under the prompt and saves the limits to
   `~/.cache/over9k/usage/claude.json` (on Bedrock, each session's cost per day
@@ -226,7 +226,7 @@ Left to right. All colours are theme names (`canvas`, `chrome`, `background`,
 - The side panel is one stack for the whole window, not one per space.
 - Usage reads Claude from `usage/claude.json`, Codex from its latest session file,
   and Gemini only once Over9k's Antigravity status line is on (Options ›
-  Status lines).
+  Footers).
 
 ## Done when
 

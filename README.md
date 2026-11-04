@@ -76,12 +76,11 @@ with the plan's name, the percentage used in green, yellow from 50% or red from
 80%, and how long until it resets. Click a service to see every limit it
 reports, as bars. In the layout it sits above the sidebar's footer; on its
 own, it's a single line along the bottom of the window. Codex's numbers come
-from its latest session. Claude's need Over9k's optional status line (see
-[Status lines](#status-lines)). Claude on
-Amazon Bedrock has no plan limits, since it's paid per use, so its row shows
-what you've spent today instead, with each session's cost. Hide any you don't use in Options.
-
-Gemini's come from Over9k's Antigravity status line (Options › Status lines).
+from its latest session. Claude's need Over9k's Claude Code footer, and
+Gemini's its Antigravity footer (see [Footers](#footers)). Claude on Amazon
+Bedrock has no plan limits, since it's paid per use, so its row shows what
+you've spent today instead, with each session's cost. Hide any you don't use
+in Options.
 
 ### [Switcher](over9k-switcher): Ctrl+Tab between agents
 
@@ -165,23 +164,23 @@ From each agent's own files, with nothing to set up:
 - **Antigravity:** the conversation file its process holds open, in
   `~/.gemini/antigravity-cli`, gives the model, effort, the conversation's
   title and when it last changed. Its context isn't readable there, so that
-  one needs its status line (below).
+  one needs a footer (below).
 
-### Status lines
+### Footers
 
-Some things an agent only tells its status line, the line under its prompt.
-**Options › Status lines** adds Over9k's, one switch per agent that has one.
-Each is off unless you turn it on. If you have your own, Over9k's takes its
-place while it's on, and yours comes back when it's off.
+Some details only reach an agent's footer, the status line under its prompt.
+For those, **Options › Footers** adds Over9k's footer, one switch per agent
+that needs it, each off unless you turn it on:
 
-- **Claude Code:** model and effort, context, how long the prompt cache lasts,
-  and your 5-hour and weekly limits. Over9k takes the limits for the usage
-  rows (on Amazon Bedrock, each session's cost instead). "Show its limits" on
-  the Usage strip turns it on too.
-- **Antigravity:** the 5-hour and weekly limits per model group, under its
-  own line. Over9k takes Gemini's limits and the agent's context from it.
+- **Claude Code footer:** needed for your 5-hour and weekly limits (on Amazon
+  Bedrock, each session's cost). It shows model and effort, context, how long
+  the prompt cache lasts and those limits. "Show its limits" on the Usage
+  strip turns it on too.
+- **Antigravity footer:** needed for the agent's context and Gemini's limits.
+  It shows context and the limits per model group, under Antigravity's own.
 
-Codex and Pi show their own line, and Over9k reads theirs from their files.
+Codex and Pi need no footer. While one is on, it shows instead of any footer you
+set up yourself, and yours comes back when it's off.
 
 ## What the installer changes
 

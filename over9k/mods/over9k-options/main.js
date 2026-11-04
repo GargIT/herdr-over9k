@@ -41,13 +41,13 @@ const SUB_ITEMS = [
   ["subTime", "Running for"],
 ];
 // Options' pages (the navigator on the left).
-const PAGES = [["folders", "Folders"], ["spaces", "Space rows"], ["agents", "Agent rows"], ["subs", "Subagent rows"], ["usage", "Usage"], ["todos", "To-do"], ["timeline", "Timeline"], ["claude", "Status lines"]];
+const PAGES = [["folders", "Folders"], ["spaces", "Space rows"], ["agents", "Agent rows"], ["subs", "Subagent rows"], ["usage", "Usage"], ["todos", "To-do"], ["timeline", "Timeline"], ["claude", "Footers"]];
 // The usage section above Settings (over9k-usage): whether it shows, and which services.
 const USAGE_ITEMS = [
   ["usage", "Show usage", "Limits per service, above Settings"],
-  ["usageClaude", "Claude", "Needs its status line (Options › Status lines)."],
+  ["usageClaude", "Claude", "Needs its footer (Options › Footers)."],
   ["usageCodex", "Codex", "From Codex's latest session"],
-  ["usageGemini", "Gemini", "Includes 3rd-party (Claude, GPT) limits. Needs its status line."],
+  ["usageGemini", "Gemini", "Includes 3rd-party (Claude, GPT) limits. Needs its footer (Options › Footers)."],
 ];
 // over9k's handoff.sh as over9k installs it (relative to home): agents run it
 // by that path, so it lives outside the mod. Its --rule on|off writes or removes
@@ -271,10 +271,10 @@ export default class SidebarOptions extends View {
       .child(group("Timeline", "Your prompts in the agent you're in, in the right panel: what it did, how long it worked, when it finished, tokens.", true))
       .child(check(["timeline", "Timeline", "On: the Timeline button and panel. Off: both hidden"]));
     if (this.page === "claude") return page
-      .child(group("Status lines", "Details come from each agent's files. A status line adds more.", true))
-      .child(check(["claudeStatus", "Claude Code", "Off: model, context, cache. On: also your limits, in a line that takes over from any status line you have (it's back when off)."]))
-      .child(check(["agyStatus", "Antigravity", this.agyHere === false ? "Antigravity isn't installed on this computer." : "Off: model and name. On: also context and limits, in a line that takes over from any status line you have (it's back when off)."]))
-      .child(div().pt(8).text_size(11).text_color(t.dim).child("No switch for Codex or Pi: everything about them is in their own files. Changes apply to agents you start next."));
+      .child(group("Footers", "Agent rows, subagent rows and the usage rows read each agent directly: its files, or the footer it already shows. Some details only reach a footer, so those agents need Over9k's.", true))
+      .child(check(["claudeStatus", "Claude Code footer", "Needed for your 5-hour and weekly limits (or Bedrock spend)."]))
+      .child(check(["agyStatus", "Antigravity footer", this.agyHere === false ? "Antigravity isn't installed on this computer." : "Needed for the agent's context and Gemini's limits."]))
+      .child(div().pt(8).text_size(11).text_color(t.dim).child("Codex and Pi need no footer. While one is on, it shows instead of any footer you set up yourself; yours comes back when it's off. Applies to agents you start next."));
     if (this.page === "todos") return page
       .child(group("To-do", "Each project's list, in the right panel. Agents add to it and tick it too.", true))
       .child(check(TODO_ITEMS[0]))
