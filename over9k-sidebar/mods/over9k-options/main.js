@@ -45,9 +45,9 @@ const PAGES = [["folders", "Folders"], ["spaces", "Space rows"], ["agents", "Age
 // The usage section above Settings (over9k-usage): whether it shows, and which services.
 const USAGE_ITEMS = [
   ["usage", "Show usage", "Limits per service, above Settings"],
-  ["usageClaude", "Claude", "Its limits need Over9k's Claude Code status line (Options › Status lines)"],
+  ["usageClaude", "Claude", "Needs its status line (Status lines)"],
   ["usageCodex", "Codex", "From Codex's latest session"],
-  ["usageGemini", "Gemini", "With the 3rd-party (Claude, GPT) limits. Needs Over9k's Antigravity status line (Options › Status lines)"],
+  ["usageGemini", "Gemini", "With 3rd-party (Claude, GPT) limits. Needs its status line (Status lines)"],
 ];
 // over9k's handoff.sh as over9k installs it (relative to home): agents run it
 // by that path, so it lives outside the mod. Its --rule on|off writes or removes
@@ -271,10 +271,10 @@ export default class SidebarOptions extends View {
       .child(group("Timeline", "Your prompts in the agent you're in, in the right panel: what it did, how long it worked, when it finished, tokens.", true))
       .child(check(["timeline", "Timeline", "On: the Timeline button and panel. Off: both hidden"]));
     if (this.page === "claude") return page
-      .child(group("Status lines", "A line under each agent's prompt, for agents that have one. Optional: Codex and Pi show their own, and Over9k reads agent details from each one's files. A status line adds what only it is given.", true))
-      .child(check(["claudeStatus", "Claude Code", "Adds a line under Claude Code's prompt: model and effort, context, how long the prompt cache lasts, and your 5-hour and weekly limits. Over9k also takes Claude's limits (or Bedrock spend) from it for the usage rows, since Claude Code gives them to nothing else. If you have your own status line, this one takes its place while on, and yours comes back when it's off"]))
-      .child(check(["agyStatus", "Antigravity", this.agyHere === false ? "Antigravity isn't installed here" : "Adds a line under Antigravity's own: the 5-hour and weekly limits per model group. Over9k also takes its model, context and conversation name from it, and Gemini's limits for the usage rows (the name needs sqlite3). Any status line and title you had come back when it's off"]))
-      .child(div().pt(8).text_size(11).text_color(t.dim).child("They reach agents you start after the change."));
+      .child(group("Status lines", "A line under the agent's prompt. Over9k also reads what only it gets.", true))
+      .child(check(["claudeStatus", "Claude Code", "Model, context, cache and limits. Feeds Claude's usage row. Replaces yours while on"]))
+      .child(check(["agyStatus", "Antigravity", this.agyHere === false ? "Not installed here" : "Limits per model. Feeds Gemini's usage row and agent details. Replaces yours while on"]))
+      .child(div().pt(8).text_size(11).text_color(t.dim).child("Codex and Pi show their own. New agents get the change."));
     if (this.page === "todos") return page
       .child(group("To-do", "Each project's list, in the right panel. Agents add to it and tick it too.", true))
       .child(check(TODO_ITEMS[0]))
