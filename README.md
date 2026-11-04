@@ -29,9 +29,10 @@ project work (turn that on in Options › Folders).
 
 ![Over9k Launcher](over9k-launcher/preview.png)
 
-Ctrl+Shift+A (Cmd+Shift+A on macOS), or the sidebar's +, opens one menu for starting work: a CLI or any
-installed agent in the space you're in, a new git worktree, or a past Claude
-Code, Codex or Pi session to pick up where you left off. Pi can run on a local
+Ctrl+Shift+A (Cmd+Shift+A on macOS), or the sidebar's +, opens one menu for
+starting work: a CLI or any installed agent in the space you're in, a new git
+worktree, or a past Claude Code, Codex or Pi session to pick up where you left
+off. Pi can run on a local
 model like Qwen: pick it and its server starts for you, then stop the server
 from the same menu when you're done. The models come from Pi's own list
 (`~/.pi/agent/models.json`), and `over9k-new-menu/servers.json` says how to
@@ -52,7 +53,8 @@ suggestions, to add with one click or delete from the file.
 You can add to-dos yourself in plain words: `@fri 3pm` or `@tomorrow` sets when
 it's due, and `#api` files it under another project. Any to-do goes to the
 current conversation or to a new agent of your choice, with a brief to tick it
-when it's done. Pick several to mark done, send or delete together. The panel
+when it's done. Ctrl+click (Cmd+click on macOS) picks several, to mark done,
+send or delete together. The panel
 opens on the project you're in, with **All** a tab away, and done items keep
 when they were finished.
 
@@ -96,7 +98,8 @@ opens with every agent on every space and every connected computer, most
 recently used first, each with its status, the name of its conversation and the
 space it's in. Tap Tab again to move down, Shift+Tab to go back, and let go of
 Ctrl to land on that agent, switching space if it has to. A single tap takes you
-straight back to the agent you were in before.
+straight back to the agent you were in before. It's Ctrl+Tab on macOS too,
+since Cmd+Tab belongs to macOS's own app switcher.
 
 ### All together
 
