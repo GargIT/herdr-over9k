@@ -1,0 +1,10 @@
+# Written by Herdr into every mod folder; not part of the build.
+gpui-kit.d.ts
+herdr.d.ts
+jsconfig.json
+*.error
+.DS_Store
+__pycache__/
+*.pyc
+*.before-over9k
+*.before-update
