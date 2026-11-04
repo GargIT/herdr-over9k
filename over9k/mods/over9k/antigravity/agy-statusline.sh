@@ -10,8 +10,9 @@ in=$(cat)
 # Its title: agy's own, else its summary's (agy often sends null), as agy-title.sh.
 title=$(printf '%s' "$in" | sh "$(dirname "$0")/agy-title.sh")
 [ "$title" = Antigravity ] && title=""
-# The line itself (under agy's own), in the same order as Over9k's Claude Code
-# line: model and effort, context, then the 5-hour and weekly limits of the group
+# The line itself (under agy's own, which already shows the model and effort),
+# in the same order as Over9k's Claude Code line after those: context, then the
+# 5-hour and weekly limits of the group
 # the current model draws on (agy's quota buckets: gemini-*, and 3p-* for Claude
 # and GPT), then the other group's, named. Each used % coloured (green, yellow
 # from 50%, red from 80%), the time to reset dimmed; sections 3 spaces apart.
@@ -27,12 +28,9 @@ printf '%s' "$in" | jq -r '
   def limits($q; $p): [bucket($q; "\($p)-5h"; "5h"), bucket($q; "\($p)-weekly"; "week")];
   (.quota // {}) as $q
   | (.model.display_name // "") as $dn
-  | ($dn | capture(" *\\((?<e>Low|Medium|High|Xhigh|Max|Minimal)\\)$").e // null | if . then ascii_downcase else null end) as $pe
-  | ($dn | sub(" *\\((Low|Medium|High|Xhigh|Max|Minimal)\\)$"; "")) as $name
   | ($dn | test("^Gemini"; "i")) as $gem
   | (if $gem then ["gemini", "3p", "Claude/GPT"] else ["3p", "gemini", "Gemini"] end) as [$mine, $other, $otherName]
-  | [ ([$name, (.model.effort // $pe)] | map(select(. != null and . != "")) | join(" · ") | select(. != "")),
-      (.context_window.used_percentage // empty | "context \(color)"),
+  | [ (.context_window.used_percentage // empty | "context \(color)"),
       limits($q; $mine)[],
       (limits($q; $other) | select(length > 0) | "\($otherName) " + join("   ")) ]
   | join("   ")' 2>/dev/null
