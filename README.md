@@ -66,12 +66,13 @@ work.
 
 ## Install
 
-Get this folder (clone the repository, or download and unzip it), then run the
-installer from inside it:
-
 ```sh
+git clone https://github.com/herunan/herdr-over9k.git
+cd herdr-over9k
 sh install.sh                # Linux, macOS, or Git Bash on Windows
 ```
+
+Or download the ZIP from GitHub, unzip it, and run the installer from inside it.
 
 On Windows, from PowerShell:
 
