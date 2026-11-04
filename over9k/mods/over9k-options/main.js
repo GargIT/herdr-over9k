@@ -11,7 +11,7 @@ import { FolderPick } from "./folder-pick.js";
 import { helpTopics } from "./help.js";
 import { props, closeOverlay, openOverlay, theme, shared, setShared, home, appHome, pickFolder, exec, machines, readTextFile, notify } from "herdr";
 
-export const DEFAULTS = { keepUpToDate: false, handoffRule: false, todos: true, todoLog: true, todoSync: false, timeline: true, claudeStatus: false, todoFile: false, layout: "expanded", model: true, effort: true, context: true, since: true, cache: true, github: true, dirty: true, sync: true, prs: true,
+export const DEFAULTS = { keepUpToDate: false, handoffRule: false, todos: true, todoLog: true, todoSync: false, timeline: true, claudeStatus: false, agyStatus: false, todoFile: false, layout: "expanded", model: true, effort: true, context: true, since: true, cache: true, github: true, dirty: true, sync: true, prs: true,
   subModel: true, subEffort: true, subContext: true, subTime: true,
   usage: true, usageClaude: true, usageCodex: true, usageGemini: true };
 // The To-do panel (over9k-todos) and the `todo` command agents use.
@@ -41,13 +41,13 @@ const SUB_ITEMS = [
   ["subTime", "Running for"],
 ];
 // Options' pages (the navigator on the left).
-const PAGES = [["folders", "Folders"], ["spaces", "Space rows"], ["agents", "Agent rows"], ["subs", "Subagent rows"], ["usage", "Usage"], ["todos", "To-do"], ["timeline", "Timeline"], ["claude", "Claude Code"]];
+const PAGES = [["folders", "Folders"], ["spaces", "Space rows"], ["agents", "Agent rows"], ["subs", "Subagent rows"], ["usage", "Usage"], ["todos", "To-do"], ["timeline", "Timeline"], ["claude", "Status lines"]];
 // The usage section above Settings (over9k-usage): whether it shows, and which services.
 const USAGE_ITEMS = [
   ["usage", "Show usage", "Limits per service, above Settings"],
-  ["usageClaude", "Claude", "Its limits need Over9k's status line (Options › Claude Code)"],
+  ["usageClaude", "Claude", "Its limits need Over9k's Claude Code status line (Options › Status lines)"],
   ["usageCodex", "Codex", "From Codex's latest session"],
-  ["usageGemini", "Gemini", "From Antigravity's status line, with the 3rd-party (Claude, GPT) limits"],
+  ["usageGemini", "Gemini", "With the 3rd-party (Claude, GPT) limits. Needs Over9k's Antigravity status line (Options › Status lines)"],
 ];
 // over9k's handoff.sh as over9k installs it (relative to home): agents run it
 // by that path, so it lives outside the mod. Its --rule on|off writes or removes
@@ -102,7 +102,16 @@ export default class SidebarOptions extends View {
       this.claude = {
         todoHook: cmds("UserPromptSubmit").some((c) => c.includes("todo-hook.sh")),
         claudeStatus: /over9k[^/"]*\/claude-statusline\.sh/.test(j.statusLine?.command ?? ""),
+        agyStatus: this.claude?.agyStatus ?? false,
       };
+      this.dirty = true;
+    }).catch(() => null);
+    // Antigravity's (its own settings.json): whether its status line is Over9k's.
+    readTextFile(`${home()}/.gemini/antigravity-cli/settings.json`).then((text) => {
+      this.agyHere = text != null;
+      let j = {};
+      try { j = JSON.parse(text ?? "{}"); } catch {}
+      this.claude = { ...this.claude, agyStatus: /agy-statusline\.sh/.test(j.statusLine?.command ?? "") };
       this.dirty = true;
     }).catch(() => null);
   }
@@ -115,7 +124,7 @@ export default class SidebarOptions extends View {
     // the folders, so it's written again when one changes while it's on.
     const on = o[key] ? "on" : "off";
     const args = { todos: ["todo", on, MODS()], todoLog: ["default", "log", on], todoSync: ["default", "sync", on],
-      claudeStatus: ["status", on, MODS()] }[key];
+      claudeStatus: ["status", on, MODS()], agyStatus: ["agy", on, MODS()] }[key];
     if (args) exec("sh", [SETUP(), ...args]).then((r) => {
       if (r?.code === 4) notify({ title: "Over9k needs jq", body: "Install jq (jqlang.org) for this switch, then try again.", level: "warning" });
       this.readClaude();
@@ -262,9 +271,10 @@ export default class SidebarOptions extends View {
       .child(group("Timeline", "Your prompts in the agent you're in, in the right panel: what it did, how long it worked, when it finished, tokens.", true))
       .child(check(["timeline", "Timeline", "On: the Timeline button and panel. Off: both hidden"]));
     if (this.page === "claude") return page
-      .child(group("Claude Code", "Agent details come from Claude Code's own files; nothing here is needed for them.", true))
-      .child(check(["claudeStatus", "Status line", "Adds a line under Claude Code's prompt: model and effort, context, how long the prompt cache lasts, and your 5-hour and weekly limits. Over9k also takes Claude's limits (or Bedrock spend) from it for the usage rows, since Claude Code gives them to nothing else. If you have your own status line, this one takes its place while on, and yours comes back when it's off"]))
-      .child(div().pt(8).text_size(11).text_color(t.dim).child("It reaches Claude Code agents you start after the change."));
+      .child(group("Status lines", "A line under each agent's prompt, for agents that have one. Optional: Codex and Pi show their own, and Over9k reads agent details from each one's files. A status line adds what only it is given.", true))
+      .child(check(["claudeStatus", "Claude Code", "Adds a line under Claude Code's prompt: model and effort, context, how long the prompt cache lasts, and your 5-hour and weekly limits. Over9k also takes Claude's limits (or Bedrock spend) from it for the usage rows, since Claude Code gives them to nothing else. If you have your own status line, this one takes its place while on, and yours comes back when it's off"]))
+      .child(check(["agyStatus", "Antigravity", this.agyHere === false ? "Antigravity isn't installed here" : "Adds a line under Antigravity's own: the 5-hour and weekly limits per model group. Over9k also takes its model, context and conversation name from it, and Gemini's limits for the usage rows (the name needs sqlite3). Any status line and title you had come back when it's off"]))
+      .child(div().pt(8).text_size(11).text_color(t.dim).child("They reach agents you start after the change."));
     if (this.page === "todos") return page
       .child(group("To-do", "Each project's list, in the right panel. Agents add to it and tick it too.", true))
       .child(check(TODO_ITEMS[0]))

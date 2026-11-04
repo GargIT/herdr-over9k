@@ -202,13 +202,16 @@ Left to right. All colours are theme names (`canvas`, `chrome`, `background`,
   `~/.cache/over9k/agents/<terminal>.json`. The sidebar runs it every 5s, on
   each computer with a Claude Code agent.
 - Claude's plan limits are never in a file; Claude Code only hands them to a
-  status line. Options › Claude Code › Status line (off by default) puts in
+  status line. Options › Status lines › Claude Code (off by default) puts in
   `over9k/claude-statusline.sh`, which shows model, effort, context, cache and
   limits under the prompt and saves the limits to
   `~/.cache/over9k/usage/claude.json` (on Bedrock, each session's cost per day
   in `usage/bedrock/`). Any status line already there is kept in
   `~/.claude/.over9k-statusline-was.json` and comes back when it's off. The
-  installer never turns it on.
+  installer never turns it on. Its Antigravity switch (`setup.sh agy on`) does
+  the same in `~/.gemini/antigravity-cli/settings.json` with
+  `antigravity/agy-statusline.sh` (stacked under agy's own) and `agy-title.sh`,
+  keeping any others in `.over9k-was.json` there.
 - A variable-height `list` ignores `track_scroll`. Only `v_virtual_list` can be
   scrolled from code.
 - Hover style can linger in screenshots taken right after a reload.
@@ -219,8 +222,8 @@ Left to right. All colours are theme names (`canvas`, `chrome`, `background`,
   work on Linux only.
 - The side panel is one stack for the whole window, not one per space.
 - Usage reads Claude from `usage/claude.json`, Codex from its latest session file,
-  and Gemini only once Antigravity's status line (`over9k/antigravity/`) is set
-  up by hand.
+  and Gemini only once Over9k's Antigravity status line is on (Options ›
+  Status lines).
 
 ## Done when
 

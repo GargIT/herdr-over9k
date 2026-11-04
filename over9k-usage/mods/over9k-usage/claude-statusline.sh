@@ -1,5 +1,5 @@
 #!/bin/sh
-# Over9k's optional Claude Code status line (Options › Claude Code › Status line;
+# Over9k's optional Claude Code status line (Options › Status lines › Claude Code;
 # off unless you turn it on). It shows a line under the prompt: model and effort,
 # context used, how long the prompt cache lasts (a red "exp." once it's out), and
 # the 5-hour and weekly limits as coloured percents with time to reset. It also

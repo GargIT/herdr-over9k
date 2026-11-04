@@ -2,6 +2,7 @@
 # Over9k's setup outside Herdr: what Options' switches turn on and off, and what
 # install.sh sets up. Linux, macOS, and Windows through Git Bash.
 #   setup.sh status on|off <mods>     Over9k's optional Claude Code status line (yours kept aside)
+#   setup.sh agy on|off <mods>        Antigravity's status line and title, the same way
 #   setup.sh cleanup                  takes out what earlier versions of Over9k added
 #   setup.sh todo on|off <mods>       the to-do rule (CLAUDE.md, AGENTS.md), the `todo`
 #                                     command (~/.local/bin) and its hook (UserPromptSubmit)
@@ -52,6 +53,27 @@ case "$cmd" in
       edit '.statusLine = $w[0]' --slurpfile w "$was" && rm -f "$was"
     else
       edit "if ((.statusLine.command // \"\") | $ours) then del(.statusLine) else . end"
+    fi
+    exit 0 ;;
+  agy)
+    # Antigravity's status line and title (antigravity/agy-statusline.sh and
+    # agy-title.sh): its model and context, and Gemini's limits, for Over9k. Any
+    # others are kept aside and come back when it's off.
+    need_jq
+    ad="$HOME/.gemini/antigravity-cli"; as="$ad/settings.json"; was="$ad/.over9k-was.json"
+    [ -d "$ad" ] || { echo "Antigravity isn't installed ($ad)" >&2; exit 3; }
+    case "$mods" in */antigravity) dir=$mods ;; *) dir="$mods/over9k/antigravity" ;; esac
+    [ -s "$as" ] || echo '{}' > "$as"
+    ours='((.statusLine.command // "") | test("agy-statusline\\.sh"))'
+    aedit() { jq "$@" "$as" > "$as.tmp" && mv "$as.tmp" "$as"; }
+    if [ "$on" = on ]; then
+      jq -e "(.statusLine != null or .title != null) and ($ours | not)" "$as" >/dev/null 2>&1 && jq '{statusLine, title}' "$as" > "$was"
+      aedit --arg s "sh \"$dir/agy-statusline.sh\"" --arg t "sh \"$dir/agy-title.sh\"" \
+        '.statusLine = {type: "command", command: $s, stack_with_default: true} | .title = {type: "command", command: $t}'
+    elif [ -s "$was" ]; then
+      aedit --slurpfile w "$was" 'del(.statusLine, .title) + ($w[0] | with_entries(select(.value != null)))' && rm -f "$was"
+    else
+      aedit "if $ours then del(.statusLine, .title) else . end"
     fi
     exit 0 ;;
   cleanup)

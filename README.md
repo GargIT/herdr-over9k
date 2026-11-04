@@ -77,19 +77,11 @@ with the plan's name, the percentage used in green, yellow from 50% or red from
 reports, as bars. In the layout it sits above the sidebar's footer; on its
 own, it's a single line along the bottom of the window. Codex's numbers come
 from its latest session. Claude's need Over9k's optional status line (see
-[Where agent details come from](#where-agent-details-come-from)). Claude on
+[Status lines](#status-lines)). Claude on
 Amazon Bedrock has no plan limits, since it's paid per use, so its row shows
 what you've spent today instead, with each session's cost. Hide any you don't use in Options.
 
-Gemini's come from Antigravity's status line, which you set up by hand: add this
-to `~/.gemini/antigravity-cli/settings.json`, with `<mods>` replaced by your
-Herdr home's `mods` folder. The second line also names Antigravity agents by
-their conversation (it needs `sqlite3`).
-
-```json
-"statusLine": { "type": "command", "command": "sh <mods>/over9k/antigravity/agy-statusline.sh", "stack_with_default": true },
-"title": { "type": "command", "command": "sh <mods>/over9k/antigravity/agy-title.sh" }
-```
+Gemini's come from Over9k's Antigravity status line (Options › Status lines).
 
 ### [Switcher](over9k-switcher): Ctrl+Tab between agents
 
@@ -169,17 +161,25 @@ From each agent's own files, with nothing to set up:
   the prompt cache runs out and when it last replied.
 - **Codex:** its session files in `~/.codex/sessions` and its terminal title.
 - **Pi:** its footer on screen, and Pi's own model list.
-- **Antigravity:** only its status line has model, context and Gemini's limits,
-  so those need the optional setup under [Usage](#usage-your-limits-before-you-hit-them).
+- **Antigravity:** its files only hold internal model names, so its model,
+  context and name need its status line (below).
 
-**Claude's plan limits** are the one thing no file has: Claude Code gives them
-only to a status line. To see them, turn on **Options › Claude Code › Status
-line** (or "Show its limits" on the Usage strip). That adds a line under
-Claude Code's prompt, with model, effort, context, cache time and your 5-hour
-and weekly limits, and saves the limits for Over9k (on Amazon Bedrock, each
-session's cost instead). It's off unless you turn it on. If you have your own
-status line, Over9k's takes its place while it's on, and yours comes back when
-it's off.
+### Status lines
+
+Some things an agent only tells its status line, the line under its prompt.
+**Options › Status lines** adds Over9k's, one switch per agent that has one.
+Each is off unless you turn it on. If you have your own, Over9k's takes its
+place while it's on, and yours comes back when it's off.
+
+- **Claude Code:** model and effort, context, how long the prompt cache lasts,
+  and your 5-hour and weekly limits. Over9k takes the limits for the usage
+  rows (on Amazon Bedrock, each session's cost instead). "Show its limits" on
+  the Usage strip turns it on too.
+- **Antigravity:** the 5-hour and weekly limits per model group, under its
+  own line. Over9k takes Gemini's limits, and the agent's model, context and
+  conversation name (that needs `sqlite3`).
+
+Codex and Pi show their own line, and Over9k reads theirs from their files.
 
 ## What the installer changes
 

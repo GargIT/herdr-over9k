@@ -5,7 +5,7 @@
 // limits, so they aren't here.
 // Where the numbers come from (this computer):
 //   Claude       ~/.cache/over9k/usage/claude.json, saved by Over9k's optional status
-//                line (claude-statusline.sh: Options › Claude Code, or "Show its
+//                line (claude-statusline.sh: Options › Status lines, or "Show its
 //                limits" here), the only thing Claude Code gives its limits to; plan
 //                from ~/.claude.json's oauthAccount.planDisplayName. On Amazon Bedrock
 //                (no plan limits, paid per use) it says so, and the row shows today's

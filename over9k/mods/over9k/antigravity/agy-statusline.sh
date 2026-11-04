@@ -1,7 +1,7 @@
 #!/bin/sh
 # Antigravity CLI (agy) custom status line (settings.json statusLine, stacked
-# under the default one): usage limits per model group. Optional: see README
-# (Antigravity) for how to set it up. Needs jq. Inside Herdr it saves model,
+# under the default one): usage limits per model group. Optional: Options ›
+# Status lines › Antigravity (setup.sh agy on). Needs jq. Inside Herdr it saves model,
 # effort and context for this terminal in the
 # files Over9k keeps (~/.cache/over9k/agents/<HC_TERMINAL_ID>.json), which Over9k's
 # Spaces list shows after the agent's name. lastAt (for "3m") moves when the
