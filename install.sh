@@ -114,10 +114,8 @@ EOF
 
 if [ "$mode" = uninstall ]; then
   say "Removing Over9k from $home_dir"
-  # Only what this install set up: the status line (layout, sidebar, Usage) and
-  # the to-do pieces (layout, To-do).
+  # Only what this install set up: the to-do pieces (layout, To-do).
   if command -v jq >/dev/null 2>&1; then
-    { has over9k || has over9k-usage; } && { setup status off "$mods_arg" || true; }
     has over9k-todos && { setup todo off "$mods_arg" || true; }
     setup cleanup || true
   fi
@@ -175,14 +173,13 @@ if [ -n "$missing" ]; then
   esac
 fi
 
-# Claude Code: its status line (the sidebar's agent details, the usage rows and
-# the Timeline read it), the to-do rule, command and hook.
+# Claude Code: the to-do rule, command and hook.
 if [ "$layout" = yes ] && { [ -d "$HOME/.claude" ] || command -v claude >/dev/null 2>&1; }; then
-  if [ "$claude" != no ] && ask "Set up Claude Code for Over9k (status line, to-do rule and hook; your own status line is kept aside)?"; then
+  if [ "$claude" != no ] && ask "Set up Claude Code for Over9k (the to-do rule, the todo command and its hook)?"; then
     if command -v jq >/dev/null 2>&1; then
-      setup status on "$mods_arg" && setup todo on "$mods_arg" && say "  Claude Code: status line, to-do rule, todo command and hook set up"
+      setup todo on "$mods_arg" && say "  Claude Code: to-do rule, todo command and hook set up"
     else
-      setup todo on "$mods_arg"; say "  Claude Code: to-do rule and todo command set up; the status line and hook need jq (then Options › Claude Code)"
+      setup todo on "$mods_arg"; say "  Claude Code: to-do rule and todo command set up; its hook needs jq"
     fi
     case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) say "  Note: add ~/.local/bin to your PATH so agents can run \`todo\`." ;; esac
   fi
@@ -199,5 +196,5 @@ say "Next:"
 say "  1. Open Herdr (or restart it), then Settings › Layout › Over9k."
 if herdr-app status >/dev/null 2>&1; then say "     It's running: herdr-app do layout.switch '{\"name\":\"over9k\"}' switches now."; fi
 say "  2. Over9k help & options is at the bottom of the sidebar: pick your projects"
-say "     folder, then what each row shows. Claude Code extras: Options › Claude Code."
+say "     folder, then what each row shows."
 say "  Update: pull or download a newer copy and run this again. Remove: sh install.sh --uninstall"

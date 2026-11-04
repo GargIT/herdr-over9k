@@ -15,8 +15,6 @@ yellow or red, with when it resets. Hover a service to see every limit.
   - the most-used limit's percentage: `ansi2` (green) under 50, `ansi3` (yellow)
     from 50, `ansi1` (red) from 80
   - the time until it resets, in 11px `dim`
-- **"Claude · Show its limits"**, a link in `accent` at the end of the strip.
-  It shows when Claude Code is installed but the status line isn't Over9k's.
 - **Claude on Amazon Bedrock** has no plan limits (it's paid per use), so its
   row shows a "Bedrock" badge and today's spend, such as "today $14.20". Hover
   or open it for each session's cost by project. This is Claude Code's own
@@ -27,17 +25,14 @@ yellow or red, with when it resets. Hover a service to see every limit.
 ## How it behaves
 
 - **Hover:** a service shows every limit and its reset time.
-- **"Show its limits"** runs `setup.sh status on <this mod>/statusline.sh`,
-  which makes Over9k's status line Claude Code's. It shows nothing itself:
-  someone else's status line is kept in `~/.claude/.over9k-statusline-was.json`,
-  still shows (Over9k's runs it), and is put back when it's turned off. Claude's numbers appear after the next reply.
 - **Where the data comes from:**
-  - **Claude:** `~/.cache/over9k/usage/claude.json`, written by the status
-    line, plus the plan name from `~/.claude.json`. On Bedrock
-    (`CLAUDE_CODE_USE_BEDROCK`, or a Bedrock model id), the status line marks it
-    `{"bedrock": true}` and keeps each session's cost per day in
-    `usage/bedrock/<session>.json` as `{days: {"2026-11-04": 2.5}, project}`. That
-    is Claude Code's running `cost.total_cost_usd`, split at midnight.
+  - **Claude:** `~/.cache/over9k/usage/claude.json`, `{at, five_hour,
+    seven_day}` copied from the status line input's `rate_limits`, plus the plan
+    name from `~/.claude.json`. This mod installs no status line: the user's own
+    writes the file, if they want the row. On Bedrock it holds
+    `{at, "bedrock": true}`, and each session's cost per day is in
+    `usage/bedrock/<session>.json` as `{days: {"2026-11-04": 2.5}, project}`,
+    from the input's `cost.total_cost_usd`.
   - **Codex:** its latest session file under `~/.codex/sessions`.
   - **Gemini:** `~/.cache/over9k/usage/antigravity.json`, from Antigravity's
     status line (`agy-statusline.sh` in the Over9k layout, set up by hand).
@@ -47,9 +42,6 @@ yellow or red, with when it resets. Hover a service to see every limit.
 - **`mods/over9k-usage/`**, with `mod.json` set to
   `{"place": "bottom", "size": 30}`:
   - `main.js`: the strip, or the layout's rows.
-  - `statusline.sh`: Claude Code's status line. It shows nothing itself (your own status line, if any, still shows) and writes
-    `~/.cache/claude-agents/<terminal>.json`.
-  - `setup.sh`: the status line on or off.
 - `main.js` draws rows when the layout has a block with id `usage` holding this
   mod (the Over9k layout), and the strip otherwise. Only the rows resize their
   block (`layout.resize`).
@@ -60,15 +52,13 @@ yellow or red, with when it resets. Hover a service to see every limit.
 ## Watch out
 
 - The strip has no room to open rows, so it lists limits on hover instead.
-- Claude's limits exist only in the status line's input, so without Over9k's
-  status line there's no Claude row.
-- The status line refreshes every 5s, and only while Claude Code is open.
+- Claude's limits exist only in Claude Code's status line input, so without a
+  status line that saves them there's no Claude row. Never install or replace
+  the user's status line.
 
 ## Done when
 
 - The strip docks at the bottom and shows Codex's limits after a Codex
   session.
-- "Show its limits" sets `statusLine` in `~/.claude/settings.json` to this
-  mod's `statusline.sh`. After a Claude Code reply, Claude shows with its plan
-  and percentage.
-- Turning the status line off again restores the previous `statusLine`.
+- With `usage/claude.json` present, Claude shows with its plan and percentage.
+- `~/.claude/settings.json` is untouched.

@@ -75,12 +75,11 @@ The 5-hour and weekly limits of each plan you use (Claude, Codex and Gemini),
 with the plan's name, the percentage used in green, yellow from 50% or red from
 80%, and how long until it resets. Click a service to see every limit it
 reports, as bars. In the layout it sits above the sidebar's footer; on its
-own, it's a single line along the bottom of the window. Claude's numbers come
-from its status line, which Over9k can set up for you, and Codex's from its
-latest session. Claude on Amazon Bedrock has no plan limits, since it's paid per
-use, so its row shows what you've spent today instead, and opens to each
-session's cost (Claude Code's estimate, not your AWS bill). Hide any you don't
-use in Options.
+own, it's a single line along the bottom of the window. Codex's numbers come
+from its latest session, and Claude's from a file your own status line can
+write (see [Claude Code data](#claude-code-data)). Claude on Amazon Bedrock has
+no plan limits, since it's paid per use, so its row can show what you've spent
+today instead, with each session's cost. Hide any you don't use in Options.
 
 Gemini's come from Antigravity's status line, which you set up by hand: add this
 to `~/.gemini/antigravity-cli/settings.json`, with `<mods>` replaced by your
@@ -133,7 +132,7 @@ sees it. The layout already includes all six, so install one or the other, not
 both.
 
 **What it needs.** Herdr 0.1.12 or newer. git, jq and Python 3 power the git
-badges, Claude Code's status line and the Timeline; without one, Over9k leaves
+badges, the to-do hook and the Timeline; without one, Over9k leaves
 out what needs it, and the installer says what's missing. Claude Code gets the
 most out of it; Codex, Pi and Antigravity agents are listed too. Over9k is
 developed on Linux. On macOS, install the tools with `brew install jq python
@@ -159,6 +158,28 @@ The switcher keeps Ctrl+Tab on macOS because Cmd+Tab is macOS's own app
 switcher. The installers pick the right key file for your OS (`keys.json`, or
 `keys.macos.json` on macOS).
 
+## Claude Code data
+
+Claude Code tells only its status line a few things Over9k would like to show:
+an agent's model, effort and context, its conversation file, and your plan's
+limits. Over9k doesn't install a status line; your own can save them for it,
+and Over9k shows them when it finds them:
+
+- **`~/.cache/claude-agents/$HC_TERMINAL_ID.json`**, per Herdr terminal:
+  `{"model", "effort", "context", "cacheUntil", "lastAt", "transcript"}`
+  (`context` is the used %, `cacheUntil` and `lastAt` are Unix seconds, and
+  `transcript` is the input's `transcript_path`). The sidebar's agent details,
+  the expired-cache restart and the Timeline use it.
+- **`~/.cache/over9k/usage/claude.json`**: `{"at", "five_hour", "seven_day"}`,
+  copied from the input's `rate_limits`, for the usage rows. On Bedrock, write
+  `{"at", "bedrock": true}` instead, and each session's cost per day to
+  `~/.cache/over9k/usage/bedrock/<session_id>.json` as
+  `{"days": {"2026-11-04": 2.5}, "project": "api"}`, from the input's
+  `cost.total_cost_usd`.
+
+Without them, agents still show with their status, the Timeline finds the
+newest conversation in the agent's folder, and there's no Claude usage row.
+
 ## What the installer changes
 
 In Herdr's home (`~/.config/herdr-app`, or wherever `herdr-app --help` says), it
@@ -167,23 +188,21 @@ Over9k's key bindings into `keys.json`. Your earlier `keys.json` is kept as
 `keys.json.before-over9k`, and any binding Over9k replaces comes back when you
 uninstall.
 
-For Claude Code, and only if you say yes, it sets up three things:
-- Over9k's status line, which shows nothing itself: it only reads what Claude
-  Code tells a status line, for the sidebar's agent details, the usage rows and
-  the Timeline. If you have your own status line, it still shows.
+For Claude Code, and only if you say yes, it sets up two things:
 - The to-do rule in `~/.claude/CLAUDE.md` (and in Codex's and Pi's `AGENTS.md`),
   plus the `todo` command in `~/.local/bin`.
 - A hook that reminds agents when request logging is on.
 
-Each can be turned off again in Options. The installer's other options are
+Both can be turned off again in Options. It never touches your Claude Code
+status line. The installer's other options are
 `--home <dir>`, `--no-claude` and `--yes` (`-HerdrHome`, `-NoClaude` and `-Yes`
 on Windows).
 
 ## Uninstall
 
 `sh install.sh --uninstall` (or `install.ps1 -Uninstall`) removes the mods, the
-layout, Over9k's key bindings (giving yours back) and its Claude Code pieces,
-restoring your own status line. For a single mod, add its name. Your to-do lists
+layout, Over9k's key bindings (giving yours back) and its Claude Code pieces.
+For a single mod, add its name. Your to-do lists
 stay in `~/.local/share/over9k`; delete that folder to remove them too.
 
 ## Privacy
@@ -207,7 +226,7 @@ Other computers you've added to Herdr are reached through Herdr itself.
 install.sh, install.ps1   install, update, uninstall (the layout, or one mod)
 tools/build-mods.py       builds the mod folders below from over9k/mods
 over9k/                   the layout: layouts/, mods/, keys.json (keys.macos.json), RECIPE.md, preview.png
-  mods/over9k/            the sidebar (+ statusline.sh, antigravity/)
+  mods/over9k/            the sidebar (+ antigravity/)
   mods/over9k-tabs/       Herdr's tab bar, with To-do and Timeline added
   mods/over9k-todos/      the To-do panel, todo.sh (the `todo` command), its hook
   mods/over9k-prompts/    the Timeline panel
