@@ -244,11 +244,6 @@ function badge(el, fam, bg) {
 // Herdr knows some agents only by app (Antigravity: no program): named after it.
 const APP_NAMES = { antigravity: "Antigravity" };
 const appName = (a) => a?.program?.name || APP_NAMES[a?.app] || null;
-// A project's icon (icon.sh; set from over9k-menu): the newest file named
-// <slug>--<seconds>.<ext> in Herdr's home (appHome) data/over9k/icons, the slug
-// naming its folder and computer (the same in over9k-menu).
-const ICONS = "data/over9k/icons";
-const iconSlug = (folder, machine) => `${machine ? `${machine}-` : ""}${(folder ?? "").replace(/\/+$/, "")}`.replace(/[^A-Za-z0-9]+/g, "-").replace(/^-|-$/g, "");
 function agentName(a, tab, cwd) {
   if (tab && tab.name !== a.program?.name && !/^(\d+|t[0-9a-z]+)$/.test(tab.name)) return tab.name;
   return agentTask(a, cwd) || appName(a) || a.address;
@@ -299,9 +294,6 @@ export default class Spaces extends View {
     cx.timer.every(15000, cx => this.refreshMachines(cx));
     this.recent = shared("over9k.recentAgents") ?? [];
     cx.timer.every(500, () => this.trackRecent());
-    this.icons = shared("over9k.icons") ?? {};
-    this.loadIcons(cx);
-    cx.timer.every(3000, (cx) => this.loadIcons(cx));
     this.projects = []; // shown projects: Claude's folders + pinned - hidden (see render)
     this.auto = []; // ~/Code git repos and folders with a CLAUDE.md, AGENTS.md or .claude
     this.tops = new Map(); // a terminal's folder -> its repo's top (else itself)
@@ -346,7 +338,6 @@ export default class Spaces extends View {
     try { this.agentsBy = localStorage.getItem("agents.by") === "space" ? "space" : "state"; } catch { this.agentsBy = "state"; }
     // A close of picked sub-rows already done before a reload isn't done again.
     this.closedAt = shared("over9k.closeSubs")?.at ?? null;
-    this.iconAskAt = shared("over9k.iconAsk")?.at ?? null;
     cx.timer.every(60000, (cx) => cx.notify()); // the "3m"s move on
     this.loadInfo(cx);
     this.prs = {}; // "owner/repo" -> { open, review }: open pull requests, those asking you
@@ -1014,7 +1005,6 @@ export default class Spaces extends View {
   // context % when known. Click shows it; Ctrl+click picks it to close. A
   // worktree's terminals sit one step further in than the worktree row.
   termRows(key, t, indent = 0) {
-    indent += this.iconPad();
     const { byPane } = this.frame;
     // Something an agent started (open beside it) is listed under that agent
     // (subRows), not again on its own, while the agent runs.
@@ -1069,7 +1059,7 @@ export default class Spaces extends View {
         })
         .on_mouse_down("right", (_e, cx) => {
           cx.stop_propagation();
-          this.rightClick(`p:${p.pane}`, () => openOverlay({ mod: "over9k-menu", kind: "popup", width: 220, props: { tab: "pane", target: { pane: p.pane, terminal: p.terminal } } }));
+          this.rightClick(`p:${p.pane}`, () => openOverlay({ mod: "over9k-menu", kind: "popup", width: 220, height: 300, props: { tab: "pane", target: { pane: p.pane, terminal: p.terminal } } }));
         })
         // The agent's status left of its icon, so what follows can sit flush right;
         // on hover an x there closes the terminal. An agent's own icon; a plain
@@ -1252,7 +1242,6 @@ export default class Spaces extends View {
   // their status; a click peeks at one. Only while they run. They also stay
   // under their parent (subRows).
   visitorRows(w, t, indent = 0) {
-    indent += this.iconPad();
     const m = w.machine ?? null, folder = (w.folder ?? "").replace(/\/+$/, "");
     if (!folder) return [];
     const at = (addr) => (addr.includes("/") ? addr.split("/")[0] : null);
@@ -1956,9 +1945,8 @@ export default class Spaces extends View {
         cx.notify();
       })
       .on_mouse_down("right", () => (m ? this.folderMenu(dir, m) : this.rightClick(`c:${dir}`, () => this.folderMenu(dir))))
-      .when(collapsed, el => el.child(this.icons?.[iconSlug(dir, m)] ? this.iconSlot(dir, m) : ([...name][0]?.toUpperCase() ?? "?")))
+      .when(collapsed, el => el.child([...name][0]?.toUpperCase() ?? "?"))
       .when(!collapsed, el => (g => el
-        .when(Boolean(this.iconSlot(dir, m)), (el) => el.child(this.iconSlot(dir, m)))
         .child(div().flex_shrink(0).max_w(150).truncate().child(name))
         .when(Boolean(g?.web) && this.frame.options.github, el => el.child(this.ghLink(g, t)))
         .when(Boolean(g), el => el.children(this.counts(g, t, (cx) => this.showChanges({ name, folder: dir }, cx))))
@@ -2047,12 +2035,12 @@ export default class Spaces extends View {
 
   // Right-click on a row with no space: open it, pin it, hide it.
   folderMenu(folder, m = null) {
-    openOverlay({ mod: "over9k-menu", kind: "popup", width: 200, height: 321, props: { tab: "project", target: { folder, name: this.alias(folder, m), ...(m ? { machine: m } : {}) } } });
+    openOverlay({ mod: "over9k-menu", kind: "popup", width: 200, height: 191, props: { tab: "project", target: { folder, name: this.alias(folder, m), ...(m ? { machine: m } : {}) } } });
   }
 
   menu(w) {
     // A popup is as tall as its items; height is only the most.
-    openOverlay({ mod: "over9k-menu", kind: "popup", width: 200, height: 421, props: { tab: "space", target: { id: w.id } } });
+    openOverlay({ mod: "over9k-menu", kind: "popup", width: 200, height: 291, props: { tab: "space", target: { id: w.id } } });
   }
 
   // Spaces in order, each worktree space moved under its main checkout's.
@@ -2374,32 +2362,6 @@ export default class Spaces extends View {
     });
   }
 
-  // over9k-menu's icon items (shared "over9k.iconAsk": {cmd, folder, machine,
-  // name}): paste, choose, find, remove, through icon.sh. Find looks through the
-  // project's files; with nothing there, an agent in the project finds or makes one.
-  iconAsk({ cmd, folder, machine, name }, cx) {
-    const slug = iconSlug(folder, machine);
-    cx.spawn(async (cx) => {
-      const r = await exec("sh", [`${appHome()}/mods/over9k/icon.sh`, cmd, slug, machine ? "" : folder, `${appHome()}/${ICONS}`]).catch(() => null);
-      const code = r?.code ?? 1;
-      if (code === 3 && cmd === "find") this.iconAgent(folder, name, slug);
-      else if (code === 3 && cmd === "paste") notify({ title: "No image to paste", body: "Copy an image, or an image file, first.", level: "warning" });
-      else if (code === 4) notify({ title: "That file can't be an icon", body: "Use a PNG, SVG or JPEG (ICO and WebP need ImageMagick).", level: "warning" });
-      else if (code === 5) notify({ title: "No file picker", body: "On Linux, install kdialog or zenity, or paste the image instead.", level: "warning" });
-      this.loadIcons(cx);
-    });
-  }
-
-  // An agent in the project (its space, else a new one) that finds or makes its icon.
-  iconAgent(folder, name, slug) {
-    const brief = `Find this project's icon for Herdr's sidebar: its app icon, favicon or logo, anywhere in this folder (including untracked, generated or design files). If there is none, make a simple square SVG icon that fits the project. Save one square copy (PNG, SVG or JPEG; at least 128px; convert ICO or WebP) as ${appHome()}/${ICONS}/${slug}--<current unix seconds>.<ext>, after deleting any older ${appHome()}/${ICONS}/${slug}--* files. Don't change anything in the project itself. The sidebar picks the file up by itself; tell me in one line which file you used or what you made.`;
-    const there = spaces().find((s) => !s.machine && (s.folder ?? "").replace(/\/+$/, "") === folder);
-    const argv = ["claude"];
-    if (there) run("tab.new", { space: there.id, name: "Icon", folder, argv, task: brief });
-    else run("space.new", { name: name || folder.split("/").pop(), folder, tab: "Icon", argv, task: brief, machine: "" });
-    notify({ title: "No icon in the project", body: "An agent is looking for one (or making one).", level: "info" });
-  }
-
   // The agents in the order they were last focused (shared "over9k.recentAgents",
   // for over9k-switcher); gone ones drop off.
   trackRecent() {
@@ -2409,36 +2371,6 @@ export default class Spaces extends View {
     if (JSON.stringify(next) === JSON.stringify(this.recent)) return;
     this.recent = next;
     setShared("over9k.recentAgents", next);
-  }
-
-  // Which projects have an icon: slug -> file (shared for over9k-menu too).
-  loadIcons(cx) {
-    cx.spawn(async (cx) => {
-      const r = await exec("ls", ["-1", `${appHome()}/${ICONS}`]).catch(() => null);
-      const icons = {};
-      for (const f of (r?.stdout ?? "").split("\n").sort()) {
-        const m = /^(.+)--\d+\.(png|svg|jpe?g)$/.exec(f);
-        if (m) icons[m[1]] = f;
-      }
-      if (JSON.stringify(icons) === JSON.stringify(this.icons)) return;
-      this.icons = icons;
-      setShared("over9k.icons", icons);
-      cx.notify();
-    });
-  }
-
-  // Before a project's name: its icon, else (once any project has one) a blank
-  // of the same size, so the names line up.
-  iconSlot(folder, machine, size = 16) {
-    const f = folder && this.icons?.[iconSlug(folder, machine)];
-    if (f) return image(`${ICONS}/${f}`).w(size).h(size).flex_none().rounded(4);
-    return Object.keys(this.icons ?? {}).length ? div().w(size).h(size).flex_none() : null;
-  }
-
-  // With icons on, rows under a project (its terminals, worktrees) move in by
-  // an icon and its gap, so their icons sit under the project's name.
-  iconPad() {
-    return Object.keys(this.icons ?? {}).length ? 25 : 0;
   }
 
   row({ w, i, g, tree }, t) {
@@ -2496,8 +2428,7 @@ export default class Spaces extends View {
         h_flex()
           .gap(9)
           .items_center()
-          .when(Boolean(tree), el => el.pl(16 + this.iconPad()).child(svg("mods/workspace-chrome/branch.svg").size(13).text_color(t.dim)))
-          .when(!tree && Boolean(this.iconSlot(w.folder, w.machine)), (el) => el.child(this.iconSlot(w.folder, w.machine)))
+          .when(Boolean(tree), el => el.pl(16).child(svg("mods/workspace-chrome/branch.svg").size(13).text_color(t.dim)))
           .child(div().flex_shrink(0).max_w(150).truncate().text_color(fill).child(this.title(w)))
           .when(Boolean(g?.web) && !tree && this.frame.options.github, el => el.child(this.ghLink(g, t)))
           .when(Boolean(g), el => el.children(this.counts(g, t, (cx) => this.showChanges({ id: w.id }, cx))))
@@ -2634,8 +2565,6 @@ export default class Spaces extends View {
     if (this.projects.join("\n") !== this.shared) { this.shared = this.projects.join("\n"); setShared("projects.listed", this.projects); }
     this.frame = { sp, ps, ag, terms: terminals(), colors: kept, ms: machines(), names: shared("projects.names") ?? {}, options: { ...OPTIONS, ...(shared("sidebar.options") ?? {}) }, byPane: new Map(ag.map((a) => [a.pane, a])), groups: this.assign(sp, ps) };
     // Picked sub-rows closed from the selection menu (over9k-menu): once each.
-    const asked = shared("over9k.iconAsk");
-    if (asked?.at && asked.at !== this.iconAskAt) { this.iconAskAt = asked.at; this.iconAsk(asked, cx); }
     const closing = shared("over9k.closeSubs");
     if (closing?.at && closing.at !== this.closedAt) { this.closedAt = closing.at; this.closeSubs(closing.list ?? []); this.sel.clear(); }
     this.vis = [];

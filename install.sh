@@ -13,7 +13,7 @@
 #   --yes          don't ask
 set -eu
 
-here=$(cd "$(dirname "$0")" && pwd)
+here=$(cd "$(dirname "$0")/over9k" && pwd)  # the layout folder: layouts/, mods/, keys.json
 home_dir="" claude=ask yes=no mode=install
 while [ $# -gt 0 ]; do
   case "$1" in

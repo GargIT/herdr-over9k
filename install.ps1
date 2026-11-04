@@ -22,7 +22,7 @@ param(
   [switch]$Yes
 )
 $ErrorActionPreference = "Stop"
-$here = $PSScriptRoot
+$here = Join-Path $PSScriptRoot "over9k"  # the layout folder: layouts\, mods\, keys.json
 
 function Say($text) { Write-Host $text }
 function Ask($question) {

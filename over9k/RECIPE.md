@@ -91,8 +91,8 @@ Left to right. All colours are theme names (`canvas`, `chrome`, `background`,
   - **idle:** no mark, and the name in `muted`.
 - **Clicks in the sidebar:**
   - A project or agent focuses it. Double-click renames.
-  - Right-click opens `over9k-menu`: pin, unpin, rename, Open folder, project
-    icons, Hand off…, splits, close.
+  - Right-click opens `over9k-menu`: pin, unpin, rename, Open folder, Hand
+    off…, splits, close. A CLI's and a tab's menus have Open folder too.
   - Shift-click picks a range and Ctrl or Cmd-click picks one more. Right-click
     a picked row to act on all of them.
   - On a project's badges: the GitHub mark opens the repo, the count opens

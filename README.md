@@ -5,7 +5,7 @@ agents at once. It adds a sidebar that lists your projects and the agents in
 them, a to-do list per project that you and your agents share, a timeline of
 each conversation, and your plans' usage limits, all in one layout.
 
-![Over9k](preview.png)
+![Over9k](over9k/preview.png)
 
 ## What you get
 
@@ -14,7 +14,7 @@ each conversation, and your plans' usage limits, all in one layout.
   push/pull. Under each project are its agents, with their status, model,
   context and time since their last reply. Under each agent are its subagents,
   background commands and scheduled prompts. Links show work that crosses
-  spaces or computers, and projects can have their own icons. You can pick
+  spaces or computers, and Open folder opens any of them. You can pick
   several rows and act on them together. Past chats can be resumed from the +
   menu. When an agent's prompt cache has expired, "clear + recap" restarts it
   from a short summary. You can also start Pi on another model, local ones too.
@@ -53,8 +53,7 @@ that need them. The installer says what's missing and how to install it.
 are in place, but neither has been run there yet. Please report what doesn't
 work.
 
-- **Linux:** everything. Choosing a project icon from a file needs kdialog or
-  zenity, and pasting one needs wl-paste or xclip.
+- **Linux:** everything.
 - **macOS:** everything except two extras that read Linux's `/proc`: finding
   Codex sessions, and listing Antigravity's subagents. Install the tools with
   `brew install jq python git`.
@@ -167,24 +166,26 @@ Other computers you've added to Herdr are reached through Herdr itself.
 
 ```
 install.sh, install.ps1   install, update, uninstall
-keys.json                 Over9k's key bindings
-layouts/                  the Over9k layout and its preview
-mods/
-  over9k/                 the sidebar (+ statusline.sh, antigravity/)
-  over9k-tabs/            the tab bar
-  over9k-todos/           the To-do panel, todo.sh (the `todo` command), its hook
-  over9k-prompts/         the Timeline panel
-  over9k-usage/           the usage rows
-  over9k-options/         Help & Options, setup.sh (what the switches set up)
-  over9k-menu/            right-click menus
-  over9k-new-menu/        the + menu (start agents, resume chats, other models)
-  over9k-footer/          the sidebar's footer
-  over9k-switcher/        Ctrl+Tab between agents
-  over9k-close/           asks before closing what's still running
-  over9k-handoff/         hand an agent's work to another space
-  over9k-rename/          rename dialogs
-  over9k-server-stop/     stop a local model's server
-  over9k-panel/           the header over a subagent shown in the side panel
+over9k/                   the Over9k layout, as Herdr shares layouts:
+  RECIPE.md, preview.png  the brief to build it from, and its picture
+  keys.json               Over9k's key bindings
+  layouts/                the layout and its preview
+  mods/
+    over9k/               the sidebar (+ statusline.sh, antigravity/)
+    over9k-tabs/          the tab bar
+    over9k-todos/         the To-do panel, todo.sh (the `todo` command), its hook
+    over9k-prompts/       the Timeline panel
+    over9k-usage/         the usage rows
+    over9k-options/       Help & Options, setup.sh (what the switches set up)
+    over9k-menu/          right-click menus
+    over9k-new-menu/      the + menu (start agents, resume chats, other models)
+    over9k-footer/        the sidebar's footer
+    over9k-switcher/      Ctrl+Tab between agents
+    over9k-close/         asks before closing what's still running
+    over9k-handoff/       hand an agent's work to another space
+    over9k-rename/        rename dialogs
+    over9k-server-stop/   stop a local model's server
+    over9k-panel/         the header over a subagent shown in the side panel
 ```
 
 ## Licence

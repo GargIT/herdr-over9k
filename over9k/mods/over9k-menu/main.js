@@ -37,22 +37,6 @@ function renamePane({ pane, terminal }) {
     props: { pane, terminal, tab: tab?.id, alone: panes().filter((x) => x.tab === p?.tab).length === 1, value, title: a ? `Rename ${a.program?.name ?? "agent"} session` : "Rename terminal" } });
 }
 
-// A project's icon items (over9k shows the icon; icon.sh sets it): Paste,
-// Choose…, Find (this computer only: it reads the project's files), and Remove
-// when it has one. The slug is over9k's (iconSlug).
-const iconSlug = (folder, machine) => `${machine ? `${machine}-` : ""}${(folder ?? "").replace(/\/+$/, "")}`.replace(/[^A-Za-z0-9]+/g, "-").replace(/^-|-$/g, "");
-function iconItems(folder, machine = null, name = "") {
-  folder = folder?.replace(/\/+$/, "");
-  if (!folder || (!machine && folder === home())) return [];
-  const at = { folder, machine, name };
-  const has = Boolean((shared("over9k.icons") ?? {})[iconSlug(folder, machine)]);
-  return [
-    ["Paste icon", "icon.paste", at],
-    ["Choose icon\u2026", "icon.choose", at],
-    ...(machine ? [] : [["Find icon", "icon.find", at]]),
-    ...(has ? [["Remove icon", "icon.remove", at]] : []),
-  ];
-}
 
 function items(p, git) {
   p = p ?? {};
@@ -69,6 +53,7 @@ function items(p, git) {
         ["Rename", "pane.rename", { pane: tg.pane, terminal: tg.terminal }],
         // An agent's work to a space of its own (over9k-handoff).
         ...(agents().some((a) => a.address === tg.terminal) ? [["Hand off\u2026", "pane.handoff", { terminal: tg.terminal }]] : []),
+        ...folderItem(paneAt(tg.pane)),
         ["Split right", "pane.split", { direction: "right", pane: tg.pane }],
         ["Split down", "pane.split", { direction: "down", pane: tg.pane }],
         ["Zoom", "pane.zoom", { pane: tg.pane }],
@@ -87,6 +72,7 @@ function items(p, git) {
       return [
         ["Rename", "tab.rename", { id: tg.id }],
         ["New tab", "tab.new", { space: tg.space }],
+        ...folderItem(paneAt(panes().find((p) => p.tab === tg.id)?.pane)),
         ["Close", "close-ask", { tabs: [tg.id] }],
       ];
     case "space":
@@ -96,7 +82,6 @@ function items(p, git) {
         ...(git === "linked" ? [["Remove worktree", "worktree", { space: tg.id, action: "remove" }]] : []),
         ...folderItem(spaces().find((s) => s.id === tg.id)),
         ...listItems(spaces().find((s) => s.id === tg.id)?.folder),
-        ...((sp) => iconItems(sp?.folder, sp?.machine ?? null, sp?.name))(spaces().find((s) => s.id === tg.id)),
         ["Close", "close-ask", { spaces: [tg.id] }],
       ];
     // Rows picked in over9k (Shift/Cmd/Ctrl+click): close them all, or
@@ -120,7 +105,6 @@ function items(p, git) {
         ["Rename", "project.rename", { folder: tg.folder, name: tg.name, machine: tg.machine ?? null }],
         ...folderItem(tg),
         ...listItems(tg.folder, tg.machine ?? null),
-        ...iconItems(tg.folder, tg.machine ?? null, tg.name),
       ];
     default:
       return [
@@ -144,6 +128,12 @@ function lists(machine) {
 }
 
 // The folder in the file manager (this computer's only).
+// Where a pane's terminal is: its folder, and the computer (null: this one).
+function paneAt(pane) {
+  const p = pane && panes().find((x) => x.pane === pane);
+  const sp = p && spaces().find((s) => (s.tabs ?? []).some((t) => t.id === p.tab));
+  return p?.cwd ? { folder: p.cwd, machine: sp?.machine ?? null } : null;
+}
 function folderItem(at) {
   return at?.folder && !at.machine ? [["Open folder", "folder.reveal", { folder: at.folder }]] : [];
 }
@@ -285,7 +275,6 @@ export default class Menu extends View {
       const rest = { spaces: it[2].spaces, panes: it[2].panes };
       if (plan(rest).commands.length) openOverlay({ mod: "over9k-close", kind: "dialog", width: 380, height: 150, props: rest });
     }
-    else if (it[1].startsWith("icon.")) setShared("over9k.iconAsk", { cmd: it[1].slice(5), ...it[2], at: Date.now() });
     else if (it[1] === "list.unpin-many") for (const f of it[2].folders) unpin(f);
     else if (it[1].startsWith("list.")) listChange(it[1], it[2].folder, it[2].machine ?? null);
     else run(it[1], it[2]);
@@ -313,7 +302,7 @@ export default class Menu extends View {
       .children(
         list.map((it, i) =>
           v_flex()
-            .when(i > 0 && (it[1].endsWith(".close") || it[1] === "close-ask" || (it[1].startsWith("list.") && !list[i - 1][1].startsWith("list.")) || (it[1].startsWith("icon.") && !list[i - 1][1].startsWith("icon.")) || it[1] === "app.help" || (it[1] === "app.theme" && list[i - 1][1] !== "app.theme")), el => el.child(div().mx(7).my(4).h(1).bg(t.border)))
+            .when(i > 0 && (it[1].endsWith(".close") || it[1] === "close-ask" || (it[1].startsWith("list.") && !list[i - 1][1].startsWith("list.")) || it[1] === "app.help" || (it[1] === "app.theme" && list[i - 1][1] !== "app.theme")), el => el.child(div().mx(7).my(4).h(1).bg(t.border)))
             .child(h_flex()
             .id(`mi-${i}`)
             .h(31)

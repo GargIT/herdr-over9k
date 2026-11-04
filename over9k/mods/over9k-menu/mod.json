@@ -3,5 +3,9 @@
   "cloned_from": {
     "name": "menu",
     "version": "0.1.10"
+  },
+  "overlay": {
+    "width": 220,
+    "height": 300
   }
 }
