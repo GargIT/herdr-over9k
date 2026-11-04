@@ -1,11 +1,12 @@
 # Over9k Sidebar
 
-Every project and every agent, in one list. Each project shows its git state at
-a glance. Under it, each agent shows what it's doing, its model and how full its
-context is, plus the subagents, background commands and scheduled prompts it
-started. Links show where agents are going: into another space, or over SSH to
-another computer. An expired cache becomes a one-click, token-saving recap, and
-project work hands off to the right space.
+Every project and every agent, in one list. Point it at your code folder and
+every repo shows up on its own, with its git state; pin the ones you care
+about. Under each project, every agent shows what it's doing, its model, how
+full its context is, what it started, and where its work is going, even over
+SSH. Chats hand off to become projects, expired agents clear to a
+token-saving recap in one click, and past sessions and local models are one
+menu away.
 
 ![Over9k Sidebar](preview.png)
 

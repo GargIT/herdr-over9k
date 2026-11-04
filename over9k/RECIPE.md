@@ -1,12 +1,12 @@
 # Over9k
 
-Mission control for a fleet of coding agents. One sidebar shows every project
-and every agent working in it: what each one is doing, its model, how full its
-context is, the subagents and background jobs it started, and where its work is
-going, even into another space or over SSH to another computer. Agents keep a
-to-do list for each project as you talk to them, a Timeline shows what every
-prompt took in time and tokens, your Claude, Codex and Gemini limits stay in
-view, and an expired cache becomes a one-click, token-saving recap.
+Run a fleet of coding agents and actually know what they're doing. Over9k
+takes your productivity and visibility over 9000: every project sets itself up
+in one sidebar, with each agent's status, model, context and where its work is
+going. Agentic to-dos fill themselves in as you talk, a Timeline shows what
+every prompt cost, chats hand off to become projects, expired agents clear to
+a token-saving recap in one click, past sessions resume from one menu, local
+models start in a click, and every row is yours to customise.
 
 ![Over9k](preview.png)
 

@@ -1,12 +1,33 @@
 # Over9k for Herdr
 
-Mission control for a fleet of coding agents, built on [Herdr](https://herdr.dev).
-One sidebar shows every project and every agent working in it: what each one is
-doing, its model, how full its context is, what it started, and where its work
-is going. Agents keep a to-do list for each project as you talk to them, a
-Timeline shows what every prompt took, your plans' limits stay in view, and an
-expired cache becomes a one-click, token-saving recap. Use it as a whole layout,
-or add any of its six mods to your own.
+**Run a fleet of coding agents and actually know what they're doing.** Over9k is
+a [Herdr](https://herdr.dev) layout that takes your productivity and visibility
+over 9000.
+
+- **See everything.** Every project and every agent in one sidebar: who's
+  working, who needs you, which model, how full the context is, the subagents
+  and background jobs they started, and where their work is going.
+- **Projects that set themselves up.** Point it at your code folder and every
+  repo shows up with its git state. Pin the ones you care about, park the rest.
+- **Save tokens.** When an agent's cache has expired, one click clears it and
+  restarts it from a short recap, instead of re-reading the whole chat.
+- **Agentic to-dos.** Agents add what you ask for as you ask it and tick it off
+  when it's done, in sync with your TODO.md. Send any to-do to an agent in one
+  click.
+- **Chats that become projects.** Start a chat anywhere. When it turns into
+  project work, it hands off to a new agent in that project's space, with a
+  brief.
+- **Pick up where you left off.** Resume any past Claude Code, Codex or Pi
+  session from one menu.
+- **Local models in a click.** Start Pi on Qwen or any local model. Its server
+  starts for you and stops from the same menu.
+- **The Timeline.** Every prompt, with how long it took and the tokens it cost,
+  live while the agent works.
+- **Your limits in view.** Claude, Codex and Gemini usage, before you hit the
+  wall.
+- **Make it yours.** Menus and Options decide what every row shows.
+
+Use the whole layout, or add any of its six mods to your own.
 
 ![Over9k](over9k/preview.png)
 
