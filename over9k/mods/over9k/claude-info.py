@@ -104,10 +104,19 @@ def read(path):
             break
         if not raw.strip():
             continue
-        if ultra is None and b"Ultracode o" in raw and b"local-command-stdout" in raw:
-            hit = re.findall(rb"Ultracode o(n|ff)", raw)
-            if hit:
-                ultra = hit[-1] == b"n"
+        if ultra is None and b"Ultracode o" in raw and b'"content":"<local-command-stdout>' in raw:
+            # Only /effort's own output counts: a user entry whose content is
+            # the command's stdout as a plain string. The same words inside a
+            # tool result (a file that quotes it) or assistant text don't.
+            try:
+                j = json.loads(raw)
+            except Exception:
+                j = {}
+            text = (j.get("message") or {}).get("content") if j.get("type") == "user" and not j.get("isSidechain") else None
+            if isinstance(text, str) and text.startswith("<local-command-stdout>"):
+                hit = re.findall(r"Ultracode o(n|ff)", text)
+                if hit:
+                    ultra = hit[-1] == "n"
         if (reply is None and b'"type":"assistant"' in raw) or (request is None and b'"type":"api-request"' in raw):
             try:
                 j = json.loads(raw)
