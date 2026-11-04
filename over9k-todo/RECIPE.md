@@ -1,10 +1,9 @@
 # Over9k To-do
 
-A to-do list per project, in a panel on the right, that your agents keep too.
-Agents add what you ask for as you ask it, and tick it off when it's done. The
-list can follow the project's own TODO.md. Any to-do can be sent to the current
-conversation or to a new agent, and several can be marked done, sent or deleted
-together.
+Agentic to-do lists, one per project, that your agents keep for you. Ask for
+something and it's on the list; when the agent finishes, it's ticked. Each list
+stays in sync with the project's own TODO.md, and any to-do goes to the current
+conversation or a new agent in one click, alone or several at once.
 
 ![Over9k To-do](preview.png)
 

@@ -1,8 +1,8 @@
 # Over9k Usage
 
-Your plans' limits for Claude, Codex and Gemini, before you hit them. On its
-own it's one line along the bottom of the window. Each service shows its plan,
-its most-used limit as a coloured percentage, and when that limit resets.
+Know your limits before you hit them. Claude's, Codex's and Gemini's 5-hour and
+weekly limits sit in one line along the bottom of the window, each coloured green,
+yellow or red, with when it resets. Hover a service to see every limit.
 
 ![Over9k Usage](preview.png)
 

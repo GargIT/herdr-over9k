@@ -1,12 +1,9 @@
 # Over9k Launcher
 
-A menu on Ctrl+Shift+A for starting work. From it you can:
-
-- start a CLI or any installed agent in the space you're in
-- resume a past session of Claude Code, Codex or Pi
-- start Pi on a local model (its server starts on use)
-- stop a running model server
-- open or make a git worktree
+Start anything with one key. Ctrl+Shift+A opens a launcher for the space you're
+in: a CLI or any installed agent, a past Claude Code, Codex or Pi session to
+resume, or Pi on a local model like Qwen, with its server started for you. A
+running model server can be stopped from the same menu.
 
 ![Over9k Launcher](preview.png)
 

@@ -1,21 +1,11 @@
 # Over9k Sidebar
 
-Every project and every agent, in one list on the left. It shows:
-
-- **Projects** found in your projects folder (pin any folder, park the rest),
-  each with its git state: branch, uncommitted files, push and pull, pull
-  requests.
-- **Agents** under their project, with status, model and context.
-- **What each agent started:** subagents, background commands and scheduled
-  prompts.
-- **Links** showing an agent working in another space, or on another computer
-  over SSH.
-- **An expired prompt cache**, marked with a token-saving "clear + recap"
-  button.
-
-It also hands project work to the right space, resumes past chats and starts
-agents on local models. It comes with its right-click menus, close and rename
-dialogs, the Ctrl+Tab switcher, and its own Help & Options.
+Every project and every agent, in one list. Each project shows its git state at
+a glance. Under it, each agent shows what it's doing, its model and how full its
+context is, plus the subagents, background commands and scheduled prompts it
+started. Links show where agents are going: into another space, or over SSH to
+another computer. An expired cache becomes a one-click, token-saving recap, and
+project work hands off to the right space.
 
 ![Over9k Sidebar](preview.png)
 

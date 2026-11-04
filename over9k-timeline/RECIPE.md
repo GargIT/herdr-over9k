@@ -1,17 +1,10 @@
 # Over9k Timeline
 
-Every prompt in the Claude Code conversation you're in, newest first, on a
-vertical line in a panel on the right. Each prompt shows:
-
-- how long the agent worked on it
-- when it finished
-- the tokens it wrote
-- the files it changed and the commands it ran
-- the start of its reply
-
-The header shows the conversation's total tokens and the context the agent
-holds now. While the agent works, the time and tokens match the CLI's own
-counter.
+See what every prompt took. The Timeline lists the conversation you're in, newest
+first: how long the agent worked on each prompt, when it finished, the tokens it
+wrote, the files it changed and the commands it ran. While it works, the time and
+tokens tick live and match the CLI exactly, and the header shows how full its
+context is.
 
 ![Over9k Timeline](preview.png)
 

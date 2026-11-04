@@ -1,9 +1,11 @@
 # Over9k for Herdr
 
-Over9k is a set of [Herdr](https://herdr.dev) mods for working with many coding
-agents at once. It adds a sidebar that lists your projects and the agents in
-them, agentic to-do lists your agents keep for you, a timeline of each
-conversation, and your plans' usage limits. You can use it as a whole layout,
+Mission control for a fleet of coding agents, built on [Herdr](https://herdr.dev).
+One sidebar shows every project and every agent working in it: what each one is
+doing, its model, how full its context is, what it started, and where its work
+is going. Agents keep a to-do list for each project as you talk to them, a
+Timeline shows what every prompt took, your plans' limits stay in view, and an
+expired cache becomes a one-click, token-saving recap. Use it as a whole layout,
 or add any of its six mods to your own.
 
 ![Over9k](over9k/preview.png)
@@ -21,9 +23,9 @@ or add any of its six mods to your own.
   becomes a token-saving "clear + recap": it restarts the agent from a short
   summary instead of having it re-read the whole chat. The + menu resumes past
   chats and starts Pi on local models like Qwen.
-- **Tab bar.** Buttons for Files, Changes, To-do and Timeline. Ctrl+Tab switches
-  between agents, most recent first. Closing a tab or pane asks first, and says
-  what's still running.
+- **To-do and Timeline in Herdr's tab bar.** Two buttons beside Herdr's own
+  Files and Changes. Ctrl+Tab switches between agents, most recent first.
+  Closing a tab or pane asks first, and says what's still running.
 - **To-do panel.** Agentic to-do lists, one per project, with tabs for the
   project you're in and for All your pinned projects.
   - **Log:** agents add what you ask for as you ask it, and tick it off when
@@ -203,7 +205,7 @@ over9k/                   the Over9k layout, as Herdr shares layouts:
   layouts/                the layout and its preview
   mods/
     over9k/               the sidebar (+ statusline.sh, antigravity/)
-    over9k-tabs/          the tab bar
+    over9k-tabs/          Herdr's tab bar, with To-do and Timeline added
     over9k-todos/         the To-do panel, todo.sh (the `todo` command), its hook
     over9k-prompts/       the Timeline panel
     over9k-usage/         the usage rows

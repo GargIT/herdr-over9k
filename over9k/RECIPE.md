@@ -1,14 +1,12 @@
 # Over9k
 
-A dark, dense Herdr window for working with many coding agents at once. On the
-left, a sidebar lists every project as a space, with its git state, and under
-each project the agents working in it: their status, model and context, plus
-the subagents, background commands and scheduled prompts each one started.
-Usage limits for Claude, Codex and Gemini sit above the footer. Across the top,
-a tab bar holds the space's tabs and four panel buttons: Files, Changes, To-do
-and Timeline. The middle shows the active tab's panes as rounded cards. On the
-right, an optional panel shows a per-project to-do list shared with agents, or
-a timeline of the conversation you're in.
+Mission control for a fleet of coding agents. One sidebar shows every project
+and every agent working in it: what each one is doing, its model, how full its
+context is, the subagents and background jobs it started, and where its work is
+going, even into another space or over SSH to another computer. Agents keep a
+to-do list for each project as you talk to them, a Timeline shows what every
+prompt took in time and tokens, your Claude, Codex and Gemini limits stay in
+view, and an expired cache becomes a one-click, token-saving recap.
 
 ![Over9k](preview.png)
 
@@ -47,10 +45,11 @@ Left to right. All colours are theme names (`canvas`, `chrome`, `background`,
   - **Footer**, 97px (`over9k-footer`): Settings, Over9k help & options, and
     Add machine, each 30px with a 14px icon.
 - **Work column**, filling the rest:
-  - **Tabs**, 42px (`over9k-tabs`): the space's tabs as pills, each with its
-    program's icon, status and a close ×, then a +. On the right are the panel
-    buttons (Files, Changes, To-do, Timeline), each a 14px icon and label, the
-    open one on `selected`. Drags the window.
+  - **Tabs**, 42px (`over9k-tabs`, a copy of Herdr's own tab bar): the space's
+    tabs as pills, each with its program's icon, status and a close ×, then a +.
+    On the right are Herdr's Files and Changes buttons, plus the two Over9k adds,
+    To-do and Timeline. Each is a 14px icon and label, the open one on
+    `selected`. Drags the window.
   - **Body**, 8px padding and gap:
     - **The active tab's panes:** cards with a 10px radius, a 1px `border` (or
       1px `accent` for the focused one) and Herdr's `pane` header, 30px, always

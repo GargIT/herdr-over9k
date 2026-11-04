@@ -1,8 +1,8 @@
 # Over9k Switcher
 
-Ctrl+Tab between agents, like switching apps: a list of every agent, most
-recent first, on every space and every connected computer. Hold Ctrl and tap
-Tab to move, then let go to jump to that agent.
+Jump between agents the way you switch apps. Ctrl+Tab lists every agent on every
+space and computer, most recent first, with its status. Hold Ctrl, tap Tab, let
+go, and you're there.
 
 ![Over9k Switcher](preview.png)
 
