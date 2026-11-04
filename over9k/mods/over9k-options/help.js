@@ -4,6 +4,9 @@
 // two samples Options also shows), then a few short lines on how to use it.
 import { div, svg, image } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
+import { window } from "herdr";
+// The click that picks one more: Cmd on macOS, Ctrl elsewhere.
+const pickClick = () => (window()?.platform === "macos" ? "Cmd+click" : "Ctrl+click");
 
 const BOT = "mods/over9k/bot.svg", SUB = "mods/over9k/subagent.svg", CPU = "mods/over9k/cpu.svg", CLOCK = "mods/over9k/clock.svg";
 const CHROME = "mods/workspace-chrome";
@@ -227,7 +230,7 @@ export function helpTopics(view, t) {
           line(key("@"), "When it's due: @fri 3pm, @tomorrow, @in 2 hours"),
           line(key("#"), "Another project: #api tidy the logs"),
           line(icon(BOT, 11), "Send to this conversation or a new agent"),
-          line(key("Ctrl+click"), "Pick several: mark done, send or delete together"),
+          line(key(pickClick()), "Pick several: mark done, send or delete together"),
           line(small("Log"), "Agents add what you ask for in this project"),
           line(small("Sync"), "Its TODO.md follows the list"),
         ]),
@@ -258,7 +261,7 @@ export function helpTopics(view, t) {
             agent("Write the release notes", { l: "codex", idle: true, picked: true })),
           menu(menuRow(null, "Group into one tab"), menuRow(null, "Close selected"), menuRow(null, "Unpin selected"))), [
           line(key("Shift+click"), "A range"),
-          line(key("Ctrl+click"), "One more"),
+          line(key(pickClick()), "One more"),
           line(key("Right-click"), "Act on them all"),
         ]),
       topic("Resume",

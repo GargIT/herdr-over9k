@@ -1,0 +1,11 @@
+{
+  "global": {
+    "ctrl-tab": "over9k.switcher",
+    "cmd-shift-w": "over9k.close-tab",
+    "cmd-shift-x": "over9k.close-pane"
+  },
+  "mod:over9k-switcher": {
+    "ctrl-tab": "over9k-switcher.next",
+    "ctrl-shift-tab": "over9k-switcher.prev"
+  }
+}

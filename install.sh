@@ -34,6 +34,9 @@ done
 [ -d "$(dirname "$0")/$share/mods" ] || { echo "No such Over9k folder: $share" >&2; exit 2; }
 here=$(cd "$(dirname "$0")/$share" && pwd)
 layout=no; [ -d "$here/layouts" ] && layout=yes
+# Key bindings: keys.json, or on macOS keys.macos.json (Cmd where macOS expects it).
+keys_file="$here/keys.json"
+[ "$(uname -s)" = Darwin ] && [ -f "$here/keys.macos.json" ] && keys_file="$here/keys.macos.json"
 
 say() { printf '%s\n' "$*"; }
 ask() { # ask "question" -> 0 for yes (the default), 1 for no
@@ -71,9 +74,9 @@ has() { [ -d "$here/mods/$1" ]; }
 # where they're still Over9k's. Needs Python; without it, says what to add.
 keys() {
   if [ -z "$py" ]; then
-    say "  Key bindings: add these to $home_dir/keys.json yourself:"; sed 's/^/    /' "$here/keys.json"; return
+    say "  Key bindings: add these to $home_dir/keys.json yourself:"; sed 's/^/    /' "$keys_file"; return
   fi
-  "$py" -I - "$1" "$here/keys.json" "$home_dir/keys.json" <<'EOF'
+  "$py" -I - "$1" "$keys_file" "$home_dir/keys.json" <<'EOF'
 import json, os, shutil, sys
 how, ours_path, theirs_path = sys.argv[1:4]
 ours = json.load(open(ours_path, encoding="utf-8"))

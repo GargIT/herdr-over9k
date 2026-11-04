@@ -1,0 +1,5 @@
+{
+  "global": {
+    "cmd-shift-a": "mod.open:over9k-new-menu"
+  }
+}

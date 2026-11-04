@@ -50,6 +50,8 @@ go, and you're there.
 
 ## Watch out
 
+- Ctrl+Tab on every OS, macOS too: there, Cmd+Tab belongs to macOS's own app
+  switcher and never reaches Herdr.
 - It takes Ctrl+Tab from Herdr's tab switching. Pick another key in
   `keys.json` if you'd rather keep that.
 - A remapper sending Cmd+Tab as Ctrl+Tab works, since letting go of Cmd also

@@ -12,6 +12,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, "over9k", "mods")
 SKIP = {"gpui-kit.d.ts", "herdr.d.ts", "jsconfig.json", "__pycache__"}
 LAYOUT_KEYS = json.load(open(os.path.join(ROOT, "over9k", "keys.json")))
+# macOS: Cmd where it expects it (keys.macos.json; the installers pick it there).
+LAYOUT_KEYS_MAC = json.load(open(os.path.join(ROOT, "over9k", "keys.macos.json")))
 
 SHARES = {
     # The sidebar, with every overlay it opens (menus, dialogs, Help & Options).
@@ -20,12 +22,14 @@ SHARES = {
                  "over9k-close", "over9k-handoff", "over9k-panel", "over9k-switcher", "over9k-options"],
         "place": {"over9k": {"place": "left", "size": 268}},
         "keys": LAYOUT_KEYS,
+        "keys_macos": LAYOUT_KEYS_MAC,
     },
     # The + menu on a key: start agents and CLIs, resume chats, local models.
     "over9k-launcher": {
         "mods": ["over9k-new-menu", "over9k-server-stop"],
         "place": {"over9k-new-menu": {"place": "none", "overlay": {"width": 340, "height": 640}}},
         "keys": {"global": {"ctrl-shift-a": "mod.open:over9k-new-menu"}},
+        "keys_macos": {"global": {"cmd-shift-a": "mod.open:over9k-new-menu"}},
     },
     "over9k-todo": {
         "mods": ["over9k-todos"],
@@ -76,13 +80,14 @@ def main():
         for name, files in spec.get("extra", {}).items():
             for src_mod, fname in files:
                 shutil.copy2(os.path.join(SRC, src_mod, fname), os.path.join(mods, name, fname))
-        keys = os.path.join(base, "keys.json")
-        if spec.get("keys"):
-            with open(keys, "w") as f:
-                json.dump(spec["keys"], f, indent=2)
-                f.write("\n")
-        elif os.path.exists(keys):
-            os.remove(keys)
+        for fname, field in (("keys.json", "keys"), ("keys.macos.json", "keys_macos")):
+            keys = os.path.join(base, fname)
+            if spec.get(field):
+                with open(keys, "w") as f:
+                    json.dump(spec[field], f, indent=2)
+                    f.write("\n")
+            elif os.path.exists(keys):
+                os.remove(keys)
         print(f"{share}: {', '.join(spec['mods'])}")
     # Each mod's picture, also in the layout's folder, for its RECIPE.md.
     pics = os.path.join(ROOT, "over9k", "previews")

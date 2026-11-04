@@ -1,6 +1,6 @@
 # Over9k Launcher
 
-Start anything with one key. Ctrl+Shift+A opens a launcher for the space you're
+Start anything with one key. Ctrl+Shift+A (Cmd+Shift+A on macOS) opens a launcher for the space you're
 in: a CLI or any installed agent, a past Claude Code, Codex or Pi session to
 resume, or Pi on a local model like Qwen, with its server started for you. A
 running model server can be stopped from the same menu.
@@ -28,7 +28,8 @@ hint on the right in `dim`):
 
 ## How it behaves
 
-- **Opening it:** Ctrl+Shift+A opens it for the space you're in.
+- **Opening it:** Ctrl+Shift+A (Cmd+Shift+A on macOS) opens it for the space
+  you're in.
 - **Starting:** a row starts its agent or CLI in a new tab of that space.
   `resume.sh` starts Pi on a model, starting the model's server first when it
   isn't answering. A resumed session opens in its own project's space.
@@ -49,6 +50,7 @@ hint on the right in `dim`):
 - **`mods/over9k-server-stop/`**: the confirm dialog. It takes props
   `{name, port, pid, stop, agents}`.
 - **`keys.json`:** `global` maps `"ctrl-shift-a"` to `"mod.open:over9k-new-menu"`.
+  `keys.macos.json` maps `"cmd-shift-a"` instead. On macOS, merge that one.
 - **herdr:**
   - Reading: `knownAgents`, `spaces`, `panes`, `keys`, `readTextFile`.
   - `run` with `tab.new` and `space.new`.
@@ -69,7 +71,7 @@ hint on the right in `dim`):
 
 ## Done when
 
-- Ctrl+Shift+A opens the menu listing installed agents. Clicking Claude Code
+- Ctrl+Shift+A (Cmd+Shift+A on macOS) opens the menu listing installed agents. Clicking Claude Code
   opens a tab running it in the current space.
 - "Resume a session › Claude Code" lists past sessions. Picking one opens it
   in its project's space.

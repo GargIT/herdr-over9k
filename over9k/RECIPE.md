@@ -114,7 +114,8 @@ Left to right. All colours are theme names (`canvas`, `chrome`, `background`,
 - **Keys:**
   - Ctrl+Tab opens `over9k-switcher`: agents, most recent first. Holding Ctrl,
     Tab and Shift+Tab move, and letting go of Ctrl opens the picked agent.
-  - Ctrl+Shift+W and Ctrl+Shift+X close the tab or pane, asking first through
+  - Ctrl+Shift+W and Ctrl+Shift+X (Cmd+Shift+W and Cmd+Shift+X on macOS) close
+    the tab or pane, asking first through
     `over9k-close`, which says what ends.
 - **Panel buttons** toggle the side panel. Timeline opens only from its own
   button: if anything else turns the panel to it, the tab bar puts the previous
@@ -188,6 +189,8 @@ Left to right. All colours are theme names (`canvas`, `chrome`, `background`,
   pull-request, log, sync, timeline, handoff) and `qwen.svg`.
 
 ## Watch out
+
+- On macOS, merge `keys.macos.json` instead (Cmd where macOS expects it); Ctrl+Tab stays, since macOS keeps Cmd+Tab for switching apps.
 
 - Every mod is `"place": "none"`: nothing shows without the layout, and
   `terminal_menu` must name `over9k-menu`.

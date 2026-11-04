@@ -29,7 +29,7 @@ project work (turn that on in Options › Folders).
 
 ![Over9k Launcher](over9k-launcher/preview.png)
 
-Ctrl+Shift+A, or the sidebar's +, opens one menu for starting work: a CLI or any
+Ctrl+Shift+A (Cmd+Shift+A on macOS), or the sidebar's +, opens one menu for starting work: a CLI or any
 installed agent in the space you're in, a new git worktree, or a past Claude
 Code, Codex or Pi session to pick up where you left off. Pi can run on a local
 model like Qwen: pick it and its server starts for you, then stop the server
@@ -138,6 +138,21 @@ haven't been run there yet, so please report what doesn't work. Two extras read
 Linux's `/proc` and stay off elsewhere: finding Codex sessions, and listing
 Antigravity's subagents.
 
+## Shortcuts
+
+| | Linux and Windows | macOS |
+|---|---|---|
+| Launcher | Ctrl+Shift+A | Cmd+Shift+A |
+| Switch agents | Ctrl+Tab, then Tab / Shift+Tab | Ctrl+Tab, then Tab / Shift+Tab |
+| Close the tab (asks first) | Ctrl+Shift+W | Cmd+Shift+W |
+| Close the pane (asks first) | Ctrl+Shift+X | Cmd+Shift+X |
+| Pick one more row or to-do | Ctrl+click | Cmd+click |
+| Pick a range | Shift+click | Shift+click |
+
+The switcher keeps Ctrl+Tab on macOS because Cmd+Tab is macOS's own app
+switcher. The installers pick the right key file for your OS (`keys.json`, or
+`keys.macos.json` on macOS).
+
 ## What the installer changes
 
 In Herdr's home (`~/.config/herdr-app`, or wherever `herdr-app --help` says), it
@@ -184,7 +199,7 @@ Other computers you've added to Herdr are reached through Herdr itself.
 ```
 install.sh, install.ps1   install, update, uninstall (the layout, or one mod)
 tools/build-mods.py       builds the mod folders below from over9k/mods
-over9k/                   the layout: layouts/, mods/, keys.json, RECIPE.md, preview.png
+over9k/                   the layout: layouts/, mods/, keys.json (keys.macos.json), RECIPE.md, preview.png
   mods/over9k/            the sidebar (+ statusline.sh, antigravity/)
   mods/over9k-tabs/       Herdr's tab bar, with To-do and Timeline added
   mods/over9k-todos/      the To-do panel, todo.sh (the `todo` command), its hook

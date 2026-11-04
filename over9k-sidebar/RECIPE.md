@@ -105,7 +105,8 @@ All colours are theme names.
   `over9k-server-stop`), `over9k-close`, `over9k-rename`, `over9k-handoff`,
   `over9k-panel`, `over9k-switcher`, and `over9k-options` (with `setup.sh`,
   which turns the Claude Code pieces on and off).
-- **`keys.json`:** Ctrl+Tab → `over9k.switcher`, Ctrl+Shift+W → `over9k.close-tab`,
+- **`keys.json`** (and `keys.macos.json`, with Cmd+Shift+W and Cmd+Shift+X):
+  Ctrl+Tab → `over9k.switcher`, Ctrl+Shift+W → `over9k.close-tab`,
   Ctrl+Shift+X → `over9k.close-pane`, plus the switcher's own keys.
 - **herdr:**
   - Reading: `spaces`, `agents`, `terminals`, `panes`, `machines`, `focused`,
@@ -119,6 +120,8 @@ All colours are theme names.
     `projects.listed`, `over9k.recentAgents`, `sidebar.options`.
 
 ## Watch out
+
+- On macOS, merge `keys.macos.json` instead (Cmd where macOS expects it); Ctrl+Tab stays, since macOS keeps Cmd+Tab for switching apps.
 
 - **Status line:** model, effort, context and cache come from Over9k's status
   line (Options › Claude Code). Without it, agent rows show only the name and
