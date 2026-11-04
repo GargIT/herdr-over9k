@@ -119,6 +119,7 @@ if ($Uninstall) {
   Say "Removing Over9k from $HerdrHome"
   # Only what this install set up.
   if ($sh -and (Get-Command jq -ErrorAction SilentlyContinue)) {
+    if ((Has "over9k") -or (Has "over9k-usage")) { Setup @("status", "off", $modsArg) | Out-Null }
     if (Has "over9k-todos") { Setup @("todo", "off", $modsArg) | Out-Null }
     Setup @("cleanup") | Out-Null
   }
@@ -187,20 +188,21 @@ if ($sh) { Setup @("cleanup") | Out-Null }
 
 # What else the mods use.
 $missing = @()
-if (-not (Get-Command jq -ErrorAction SilentlyContinue)) { $missing += "jq: subagents, background tasks, resume, hand-off, the to-do hook (winget install jqlang.jq)" }
+if (-not (Get-Command jq -ErrorAction SilentlyContinue)) { $missing += "jq: Claude Code's status line, subagents, background tasks, resume, hand-off (winget install jqlang.jq)" }
 if (-not ((Get-Command python3 -ErrorAction SilentlyContinue) -or (Get-Command python -ErrorAction SilentlyContinue))) { $missing += "Python 3: the Timeline, TODO.md sync (winget install Python.Python.3.12)" }
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) { $missing += "git: the sidebar's branch, changes and push/pull (winget install Git.Git)" }
 if ($missing.Count) { Say ""; Say "Missing (Over9k works without them, minus these):"; $missing | ForEach-Object { Say "  - $_" } }
 
-# Claude Code: the to-do rule, command and hook.
+# Claude Code: its status line, the to-do rule, command and hook.
 $claudeHere = (Test-Path (Join-Path $env:USERPROFILE ".claude")) -or (Get-Command claude -ErrorAction SilentlyContinue)
-if ($isLayout -and $claudeHere -and -not $NoClaude -and $sh -and (Ask "Set up Claude Code for Over9k (the to-do rule, the todo command and its hook)?")) {
+if ($isLayout -and $claudeHere -and -not $NoClaude -and $sh -and (Ask "Set up Claude Code for Over9k (status line, to-do rule and hook; your own status line is kept aside)?")) {
   if (Get-Command jq -ErrorAction SilentlyContinue) {
+    Setup @("status", "on", $modsArg) | Out-Null
     Setup @("todo", "on", $modsArg) | Out-Null
-    Say "  Claude Code: to-do rule, todo command and hook set up"
+    Say "  Claude Code: status line, to-do rule, todo command and hook set up"
   } else {
     Setup @("todo", "on", $modsArg) | Out-Null
-    Say "  Claude Code: to-do rule and todo command set up; its hook needs jq"
+    Say "  Claude Code: to-do rule and todo command set up; the status line and hook need jq (then Options > Claude Code)"
   }
 }
 
@@ -214,5 +216,5 @@ if (-not $isLayout) {
 Say "Next:"
 Say "  1. Open Herdr (or restart it), then Settings > Layout > Over9k."
 Say "  2. Over9k help & options is at the bottom of the sidebar: pick your projects"
-Say "     folder, then what each row shows."
+Say "     folder, then what each row shows. Claude Code extras: Options > Claude Code."
 Say "  Update: get a newer copy and run this again. Remove: install.ps1 -Uninstall"

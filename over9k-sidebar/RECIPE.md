@@ -85,6 +85,7 @@ All colours are theme names.
 - **Options** (the bottom row) covers:
   - folders
   - what each row shows
+  - Claude Code's status line, which supplies model, effort, context and cache
   - the hand-off and to-do rules for agents
 
   Its Help is illustrated, page by page.
@@ -94,6 +95,8 @@ All colours are theme names.
 - **`mods/over9k/`**, with `mod.json` set to `{"place": "left", "size": 268}`:
   - `main.js`: the sidebar.
   - `agent-name.js`, `close-plan.js`.
+  - `statusline.sh`: Claude Code's status line. It shows nothing itself (your own status line, if any, still shows) and writes
+    `~/.cache/claude-agents/<terminal>.json`, which the sidebar reads.
   - `handoff.sh`, copied to `~/.local/share/over9k` for agents to run.
   - The helper scripts `subagents.sh`, `tasks.sh`, `codex.sh`,
     `subagent-view.sh`, `output-view.sh`, `note-view.sh`, `agy-subagents.py`.
@@ -120,10 +123,9 @@ All colours are theme names.
 
 - On macOS, merge `keys.macos.json` instead (Cmd where macOS expects it); Ctrl+Tab stays, since macOS keeps Cmd+Tab for switching apps.
 
-- **Agent details:** model, effort, context and cache come from
-  `~/.cache/claude-agents/<terminal>.json`, if the user's own Claude Code status
-  line writes it (see Claude Code data in the repo's README). Over9k installs no status line. Without
-  it, agent rows show only the name and status.
+- **Status line:** model, effort, context and cache come from Over9k's status
+  line (Options › Claude Code). Without it, agent rows show only the name and
+  status.
 - **Linux-only extras:** Codex session detection, Antigravity subagents and the
   "SSH'd from here" links read `/proc`.
 - **Windows:** needs Git for Windows' `sh`.
@@ -138,7 +140,7 @@ All colours are theme names.
 - The sidebar docks on the left. With the projects folder set, its git repos
   are listed with branch badges.
 - A Claude Code agent in a project shows under it, with a spinner while it
-  works. With the data file there, it shows the model and context %.
+  works. With the status line on, it shows the model and context %.
 - A subagent it starts appears under it, and its chip counts it.
 - Right-click › Open folder opens the project in the file manager.
 - Ctrl+Tab lists agents. Letting go of Ctrl switches.

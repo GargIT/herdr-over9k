@@ -11,7 +11,7 @@ import { FolderPick } from "./folder-pick.js";
 import { helpTopics } from "./help.js";
 import { props, closeOverlay, openOverlay, theme, shared, setShared, home, appHome, pickFolder, exec, machines, readTextFile, notify } from "herdr";
 
-export const DEFAULTS = { keepUpToDate: false, handoffRule: false, todos: true, todoLog: true, todoSync: false, timeline: true, todoFile: false, layout: "expanded", model: true, effort: true, context: true, since: true, cache: true, github: true, dirty: true, sync: true, prs: true,
+export const DEFAULTS = { keepUpToDate: false, handoffRule: false, todos: true, todoLog: true, todoSync: false, timeline: true, claudeStatus: true, todoFile: false, layout: "expanded", model: true, effort: true, context: true, since: true, cache: true, github: true, dirty: true, sync: true, prs: true,
   subModel: true, subEffort: true, subContext: true, subTime: true,
   usage: true, usageClaude: true, usageCodex: true, usageGemini: true };
 // The To-do panel (over9k-todos) and the `todo` command agents use.
@@ -22,7 +22,7 @@ const TODO_ITEMS = [
 // sh and Python take on Windows too.
 const MODS = () => `${appHome().replace(/\\/g, "/")}/mods`;
 // What the switches set up outside Herdr (the to-do rule, command and hook,
-// the Log / Sync defaults):
+// Claude Code's status line, the Log / Sync defaults):
 // setup.sh, next to this file, which install.sh runs too.
 const SETUP = () => `${MODS()}/over9k-options/setup.sh`;
 // Each [key, label, a note under it]; the sample above shows what each looks like.
@@ -41,11 +41,11 @@ const SUB_ITEMS = [
   ["subTime", "Running for"],
 ];
 // Options' pages (the navigator on the left).
-const PAGES = [["folders", "Folders"], ["spaces", "Space rows"], ["agents", "Agent rows"], ["subs", "Subagent rows"], ["usage", "Usage"], ["todos", "To-do"], ["timeline", "Timeline"]];
+const PAGES = [["folders", "Folders"], ["spaces", "Space rows"], ["agents", "Agent rows"], ["subs", "Subagent rows"], ["usage", "Usage"], ["todos", "To-do"], ["timeline", "Timeline"], ["claude", "Claude Code"]];
 // The usage section above Settings (over9k-usage): whether it shows, and which services.
 const USAGE_ITEMS = [
   ["usage", "Show usage", "Limits per service, above Settings"],
-  ["usageClaude", "Claude", "From what your own status line saves (README: Claude Code data)"],
+  ["usageClaude", "Claude", "From Claude Code's status line"],
   ["usageCodex", "Codex", "From Codex's latest session"],
   ["usageGemini", "Gemini", "From Antigravity's status line, with the 3rd-party (Claude, GPT) limits"],
 ];
@@ -93,13 +93,14 @@ export default class SidebarOptions extends View {
   }
 
   // Which of Over9k's Claude Code pieces are really set up (the switches show
-  // that, not just the last click): the to-do hook.
+  // that, not just the last click): the status line and the to-do hook.
   readClaude() {
     readTextFile(`${home()}/.claude/settings.json`).then((text) => {
       let j = {};
       try { j = JSON.parse(text ?? "{}"); } catch {}
       const cmds = (ev) => (j.hooks?.[ev] ?? []).flatMap((h) => h.hooks ?? []).map((h) => h.command ?? "");
       this.claude = {
+        claudeStatus: /over9k[^/"]*\/statusline\.sh/.test(j.statusLine?.command ?? ""),
         todoHook: cmds("UserPromptSubmit").some((c) => c.includes("todo-hook.sh")),
       };
       this.dirty = true;
@@ -114,7 +115,7 @@ export default class SidebarOptions extends View {
     // the folders, so it's written again when one changes while it's on.
     const on = o[key] ? "on" : "off";
     const args = { todos: ["todo", on, MODS()], todoLog: ["default", "log", on], todoSync: ["default", "sync", on],
-      }[key];
+      claudeStatus: ["status", on, MODS()] }[key];
     if (args) exec("sh", [SETUP(), ...args]).then((r) => {
       if (r?.code === 4) notify({ title: "Over9k needs jq", body: "Install jq (jqlang.org) for this switch, then try again.", level: "warning" });
       this.readClaude();
@@ -260,6 +261,10 @@ export default class SidebarOptions extends View {
     if (this.page === "timeline") return page
       .child(group("Timeline", "Your prompts in the agent you're in, in the right panel: what it did, how long it worked, when it finished, tokens.", true))
       .child(check(["timeline", "Timeline", "On: the Timeline button and panel. Off: both hidden"]));
+    if (this.page === "claude") return page
+      .child(group("Claude Code", "What Over9k sets up in Claude Code's own settings (~/.claude/settings.json). Each switch shows what's there now.", true))
+      .child(check(["claudeStatus", "Status line", "Lets Over9k read what Claude Code tells a status line: the sidebar's agent details, the usage rows and the Timeline need it. It shows nothing itself; your own status line still shows, and comes back as it was when this is off"]))
+      .child(div().pt(8).text_size(11).text_color(t.dim).child("The to-do rule and its hook come with To-do (Options › To-do). New settings reach agents you start after the change."));
     if (this.page === "todos") return page
       .child(group("To-do", "Each project's list, in the right panel. Agents add to it and tick it too.", true))
       .child(check(TODO_ITEMS[0]))

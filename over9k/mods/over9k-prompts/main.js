@@ -7,8 +7,8 @@
 // only gets a message's tokens once it's finished), the files it changed and
 // the commands it ran, and the start of its reply. Click one, or ↑/↓ then Enter,
 // to read the whole prompt and the reply (Markdown) here; Esc closes it.
-// Claude Code agents only: if the user's own status line writes
-// ~/.cache/claude-agents/<terminal>.json, its transcript path is used; prompts.py reads it.
+// Claude Code agents only: their status line writes ~/.cache/claude-agents/<terminal>.json
+// with the transcript's path (over9k reads the same files); prompts.py reads it.
 // Followed: the agent you're in, else the last one you were in.
 
 import { View, div, svg } from "gpui-kit";
@@ -81,7 +81,7 @@ export default class Prompts extends View {
         const info = await readTextFile(`${home()}/.cache/claude-agents/${this.agent}.json`).catch(() => null);
         let path = null;
         try { path = info && JSON.parse(info).transcript; } catch {}
-        // Without that file: Claude Code's folder for the agent's
+        // Without Over9k's status line: Claude Code's folder for the agent's
         // working directory (the reader takes its newest conversation).
         const a = agents().find((x) => x.address === this.agent);
         const cwd = panes().find((p) => p.terminal === this.agent)?.cwd;

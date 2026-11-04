@@ -177,6 +177,10 @@ Left to right. All colours are theme names (`canvas`, `chrome`, `background`,
   - Python 3 runs the Timeline reader and the TODO.md sync. `ps`, `curl` (local
     model servers) and `kill` are used too.
 - **Outside Herdr**, turned on from Options:
+  - `over9k/statusline.sh` as Claude Code's status line. It shows nothing itself (your own status line, if any, still shows) and writes
+    `~/.cache/claude-agents/<terminal>.json` (model, effort, context, cache,
+    transcript) and `~/.cache/over9k/usage/claude.json`, which is what the
+    sidebar, the usage rows and the Timeline read.
   - The `todo` command: a wrapper in `~/.local/bin` for `over9k-todos/todo.sh`.
     It keeps lists in `~/.local/share/over9k/todos/<slug>.md`.
   - The to-do rule in CLAUDE.md and AGENTS.md, and a UserPromptSubmit hook.
@@ -193,11 +197,9 @@ Left to right. All colours are theme names (`canvas`, `chrome`, `background`,
 - Mods can't import from each other. That's why `agent-name.js` and
   `close-plan.js` are copied into each mod that uses them, and each copy must
   stay the same.
-- Over9k never installs or changes Claude Code's status line. Agent details,
-  Claude's usage row and the Timeline's exact conversation read
-  `~/.cache/claude-agents/<terminal>.json` and `~/.cache/over9k/usage/claude.json`
-  if the user's own status line writes them (see Claude Code data in the repo's README). Without them,
-  agent rows show name and status only.
+- Agent details, the usage rows and the Timeline need Claude Code's status line
+  to be Over9k's. Without it, agent rows show only a name, and the Timeline says
+  it shows Claude Code agents.
 - A variable-height `list` ignores `track_scroll`. Only `v_virtual_list` can be
   scrolled from code.
 - Hover style can linger in screenshots taken right after a reload.
@@ -207,7 +209,7 @@ Left to right. All colours are theme names (`canvas`, `chrome`, `background`,
   PATH. Codex session detection and Antigravity subagents read `/proc`, so they
   work on Linux only.
 - The side panel is one stack for the whole window, not one per space.
-- Usage reads Claude from `usage/claude.json`, Codex from its latest session file,
+- Usage reads Claude from the status line, Codex from its latest session file,
   and Gemini only once Antigravity's status line (`over9k/antigravity/`) is set
   up by hand.
 
@@ -221,8 +223,8 @@ Left to right. All colours are theme names (`canvas`, `chrome`, `background`,
 - `herdr-app status` shows no errors, and `herdr-app check` passes for all 15
   `mods/over9k*` folders.
 - With a Claude Code agent running in a project, its row shows a spinner while
-  it works. If its status line saves the data, its details show the model and
-  context %.
+  it works. Its details then show the model and context %, and match the CLI's
+  status line.
 - Opening Timeline shows that agent's prompts newest first. The working turn's
   time and ↓ tokens match the CLI's spinner line.
 - `todo add "x"` in a project shows "x" in the To-do panel within a second.
