@@ -25,7 +25,7 @@ is going, into another space or over SSH to another computer. When an agent's
 prompt cache has expired, one click clears it and restarts it from a short
 recap, instead of paying to re-read the whole chat. And a chat you started
 anywhere can hand off to a new agent in the right project, so it becomes
-project work.
+project work (turn that on in Options › Folders).
 
 ### [Launcher](over9k-launcher): start, resume, run local
 
@@ -33,7 +33,9 @@ Ctrl+Shift+A, or the sidebar's +, opens one menu for starting work: a CLI or any
 installed agent in the space you're in, a new git worktree, or a past Claude
 Code, Codex or Pi session to pick up where you left off. Pi can run on a local
 model like Qwen: pick it and its server starts for you, then stop the server
-from the same menu when you're done.
+from the same menu when you're done. The models come from Pi's own list
+(`~/.pi/agent/models.json`), and `over9k-new-menu/servers.json` says how to
+start and stop each one's server.
 
 ### [To-do](over9k-todo): agentic to-dos
 
@@ -66,8 +68,18 @@ with the plan's name, the percentage used in green, yellow from 50% or red from
 80%, and how long until it resets. Click a service to see every limit it
 reports, as bars. In the layout it sits above the sidebar's footer; on its
 own, it's a single line along the bottom of the window. Claude's numbers come
-from its status line, which Over9k can set up for you, Codex's from its latest
-session, and Gemini's from Antigravity. Hide any you don't use in Options.
+from its status line, which Over9k can set up for you, and Codex's from its
+latest session. Hide any you don't use in Options.
+
+Gemini's come from Antigravity's status line, which you set up by hand: add this
+to `~/.gemini/antigravity-cli/settings.json`, with `<mods>` replaced by your
+Herdr home's `mods` folder. The second line also names Antigravity agents by
+their conversation (it needs `sqlite3`).
+
+```json
+"statusLine": { "type": "command", "command": "sh <mods>/over9k/antigravity/agy-statusline.sh", "stack_with_default": true },
+"title": { "type": "command", "command": "sh <mods>/over9k/antigravity/agy-title.sh" }
+```
 
 ### [Switcher](over9k-switcher): Ctrl+Tab between agents
 
@@ -127,7 +139,8 @@ Over9k's key bindings into `keys.json`. Your earlier `keys.json` is kept as
 uninstall.
 
 For Claude Code, and only if you say yes, it sets up three things:
-- Over9k's status line, with your own kept aside.
+- Over9k's status line, with your own kept aside. It's where the sidebar's agent
+  details, the usage rows and the Timeline get their data.
 - The to-do rule in `~/.claude/CLAUDE.md` (and in Codex's and Pi's `AGENTS.md`),
   plus the `todo` command in `~/.local/bin`.
 - A hook that reminds agents when request logging is on.
@@ -135,33 +148,6 @@ For Claude Code, and only if you say yes, it sets up three things:
 Each can be turned off again in Options. The installer's other options are
 `--home <dir>`, `--no-claude` and `--yes` (`-HerdrHome`, `-NoClaude` and `-Yes`
 on Windows).
-
-## Extras
-
-**Claude Code's status line** (Options › Claude Code) is the line under Claude
-Code's prompt: model, context, cache and limits. It's also where the sidebar's
-agent details, the usage rows and the Timeline get their data, so keep it on
-unless you have your own. Yours is kept aside and comes back when you turn it
-off.
-
-**To-do for agents** (Options › To-do) sets up the rule, the `todo` command and
-the hook. You can also choose whether new projects start with Log and Sync on.
-
-**Hand off project work** (Options › Folders) adds the rule that lets a chat
-outside your projects pass project work to a new agent in the right space.
-
-**Local models** come from Pi's `~/.pi/agent/models.json`. A model whose server
-is off is started when you pick it, using the commands in
-`over9k-new-menu/servers.json`.
-
-**Antigravity (Gemini)** usage and conversation titles are set up by hand. Add
-this to `~/.gemini/antigravity-cli/settings.json`, with `<mods>` replaced by
-your Herdr home's `mods` folder. Titles need `sqlite3`.
-
-```json
-"statusLine": { "type": "command", "command": "sh <mods>/over9k/antigravity/agy-statusline.sh", "stack_with_default": true },
-"title": { "type": "command", "command": "sh <mods>/over9k/antigravity/agy-title.sh" }
-```
 
 ## Uninstall
 
