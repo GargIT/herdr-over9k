@@ -317,8 +317,8 @@ export default class Spaces extends View {
     const autoOn = Object.fromEntries(Object.entries(this.remote).map(([m, f]) => [m, f.dirs ?? []]));
     if (JSON.stringify(autoOn) !== JSON.stringify(shared("projects.autoOn") ?? {})) setShared("projects.autoOn", autoOn);
     this.closedOpenOn = JSON.parse(localStorage.getItem("projects.closedOpenOn") ?? "{}");
-    // Model, effort and context per agent: Claude Code's status line script
-    // (over9k/statusline.sh, set up from Options › Claude Code) writes one file per Herdr terminal here.
+    // Model, effort and context per agent: one file per Herdr terminal here, if the
+    // user's own Claude Code status line writes it (Over9k installs none: README).
     this.info = {};
     this.infoDir = `${homeDir()}/.cache/claude-agents`;
     // Pi's info, from its footer on screen; models other than an agent's own

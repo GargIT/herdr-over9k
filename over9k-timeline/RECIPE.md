@@ -38,7 +38,7 @@ a 10px radius.
   spinner line ("(2m 14s · ↓ 6.8k tokens)") with `hc read`, so they match it.
   Finished turns use the conversation file.
 - **Context:** the last reply's input tokens, cached and not, the same figure
-  as the status line's context.
+  as Claude Code's own context figure.
 
 ## Built from
 
@@ -55,8 +55,8 @@ a 10px radius.
   - **last** ("path\tsize"): when that's unchanged, it prints `{"same": true}`.
   - **tokens:** each message's `output_tokens`, counted once (the largest).
   - **Turns:** a queued mid-turn message stays in its turn.
-- **Finding the conversation:** Over9k's status line file
-  `~/.cache/claude-agents/<terminal>.json` (`transcript`) if there is one.
+- **Finding the conversation:** `~/.cache/claude-agents/<terminal>.json`
+  (`transcript`), if the user's own status line writes one.
   Otherwise Claude Code's folder for the agent's working directory,
   `~/.claude/projects/<cwd with non-alphanumerics as ->`.
 - **herdr:** `focused`, `agents`, `panes`, `readTextFile`, `exec` (Python), `hc
@@ -65,8 +65,8 @@ a 10px radius.
 ## Watch out
 
 - Claude Code agents only.
-- Without Over9k's status line, two conversations in the same folder resolve
-  to the newer one.
+- Without that file, two conversations in the same folder resolve to the newer
+  one. Never install a status line for it.
 - Python is found as `python3`, else `python`.
 - Don't use `stat` to check whether the file grew: its flags differ between
   Linux and macOS. The reader checks the size itself.
@@ -77,5 +77,5 @@ a 10px radius.
   and the count matches the prompts you sent.
 - While it works, the newest card's time and ↓ tokens equal the CLI's spinner
   line, within one refresh.
-- The header's context matches the status line's (k-rounded).
+- The header's context matches Claude Code's (k-rounded).
 - Clicking a card shows the reply rendered as Markdown.
