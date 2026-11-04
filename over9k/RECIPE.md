@@ -1,12 +1,12 @@
 # Over9k
 
 Run a fleet of coding agents and actually know what they're doing. Over9k
-takes your productivity and visibility over 9000: every project sets itself up
-in one sidebar, with each agent's status, model, context and where its work is
-going, and a Timeline shows what happened, prompt by prompt. Agentic to-dos fill
-themselves in as you talk, chats hand off to become projects, expired agents
-clear to a token-saving recap in one click, past sessions resume from one menu,
-local models start and stop in a click, and every row is yours to customise.
+shows every project and every agent in one sidebar, with each agent's status,
+model, context and where its work is going, and a Timeline of what happened,
+prompt by prompt. Agentic to-dos fill themselves in as you talk, chats hand off
+to become projects, expired agents clear to a token-saving recap in one click,
+past sessions resume from one menu, local models start and stop in a click, and
+every row is yours to customise.
 
 ![Over9k](preview.png)
 

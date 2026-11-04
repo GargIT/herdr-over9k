@@ -1,8 +1,15 @@
 # Over9k for Herdr
 
 **Run a fleet of coding agents and actually know what they're doing.** Over9k is
-a [Herdr](https://herdr.dev) layout that takes your productivity and visibility
-over 9000.
+a layout for [Herdr](https://herdr.dev), made for keeping several agents busy
+across many projects without losing track. It puts every project and every agent
+in one place: what each one is working on, whether it needs you, how full its
+context is, what it started and where its work is going, and, in the Timeline,
+what happened prompt by prompt. Your agents keep your to-do lists for you. A
+chat turns into a project when the work calls for it. A conversation whose cache
+has expired restarts for a fraction of the tokens. And starting an agent,
+resuming one, or running it on a local model is a single menu away. Use the
+whole layout, or add just the parts you want to your own.
 
 ![Over9k](over9k/preview.png)
 
