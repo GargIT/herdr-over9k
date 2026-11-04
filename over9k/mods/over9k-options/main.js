@@ -41,13 +41,13 @@ const SUB_ITEMS = [
   ["subTime", "Running for"],
 ];
 // Options' pages (the navigator on the left).
-const PAGES = [["folders", "Folders"], ["spaces", "Space rows"], ["agents", "Agent rows"], ["subs", "Subagent rows"], ["usage", "Usage"], ["todos", "To-do"], ["timeline", "Timeline"], ["claude", "Footers"]];
+const PAGES = [["folders", "Folders"], ["spaces", "Space rows"], ["agents", "Agent rows"], ["subs", "Subagent rows"], ["usage", "Usage"], ["todos", "To-do"], ["timeline", "Timeline"], ["claude", "Session footers"]];
 // The usage section above Settings (over9k-usage): whether it shows, and which services.
 const USAGE_ITEMS = [
   ["usage", "Show usage", "Limits per service, above Settings"],
-  ["usageClaude", "Claude", "Needs the Claude Code footer."],
+  ["usageClaude", "Claude", "Needs Claude Code's session footer."],
   ["usageCodex", "Codex", "From Codex's latest session"],
-  ["usageGemini", "Gemini", "Includes 3rd-party (Claude, GPT) limits. Needs the Antigravity footer."],
+  ["usageGemini", "Gemini", "Includes 3rd-party (Claude, GPT) limits. Needs Antigravity's session footer."],
 ];
 // over9k's handoff.sh as over9k installs it (relative to home): agents run it
 // by that path, so it lives outside the mod. Its --rule on|off writes or removes
@@ -141,11 +141,11 @@ export default class SidebarOptions extends View {
       .child(div().text_size(16).font_semibold().text_color(t.foreground).child(title))
       .when(Boolean(about), (el) => el.child(div().text_size(12).text_color(t.dim).child(about ?? "")));
     // A note that some of a page's details need an agent's footer, with a link to
-    // the Footers page (and from there back to the pages they fill).
+    // the Session footers page (and from there back to the pages they fill).
     const goTo = (id, page, label) => h_flex().id(id).flex_none().gap(3).items_center().cursor_pointer().text_color(t.accent)
       .hover((s) => s.text_color(t.foreground)).on_click((_e, cx) => { this.page = page; cx.notify(); })
       .child(label).child(svg("mods/workspace-chrome/chevron-right.svg").size(10));
-    const needs = (id, text, page = "claude", label = "Footers") => h_flex().flex_none().flex_wrap().pt(10).gap_x(6).gap_y(2).items_center()
+    const needs = (id, text, page = "claude", label = "Session footers") => h_flex().flex_none().flex_wrap().pt(10).gap_x(6).gap_y(2).items_center()
       .text_size(11.5).text_color(t.dim).child(text).child(goTo(`link-${id}`, page, label));
     const choice = (id, text, on) => h_flex().id(id).flex_1().h(30).items_center().justify_center().rounded(7).cursor_pointer()
       .border_1().border_color(on ? t.accent : t.input).bg(on ? t.accent + "26" : t.raised).text_color(on ? t.foreground : t.muted)
@@ -271,20 +271,20 @@ export default class SidebarOptions extends View {
         .child(choice("expanded", "Expanded", o.layout === "expanded")))
       .child(this.sample(t, this.agentSample(t, o)))
       .children(AGENT_ITEMS.map(check))
-      .child(needs("agents", "Antigravity's context needs its footer."));
+      .child(needs("agents", "Antigravity's context needs its session footer."));
     if (this.page === "usage") return page
       .child(group("Usage", "Each service's 5-hour and weekly limits. Green, yellow from 50%, red from 80%. Click a row for every limit.", true))
       .children(USAGE_ITEMS.map(check))
-      .child(needs("usage", "Claude's and Gemini's limits need their footer."));
+      .child(needs("usage", "Claude's and Gemini's limits need their session footer."));
     if (this.page === "timeline") return page
       .child(group("Timeline", "Your prompts in the agent you're in, in the right panel: what it did, how long it worked, when it finished, tokens.", true))
       .child(check(["timeline", "Timeline", "On: the Timeline button and panel. Off: both hidden"]));
     if (this.page === "claude") return page
-      .child(group("Footers", "Agent rows, subagent rows and the usage rows read each agent directly: its files, or the footer it already shows. Some details only reach a footer, so those agents need Over9k's.", true))
-      .child(check(["claudeStatus", "Claude Code footer", "Needed for Claude's 5-hour and weekly limits (or API spend) in Usage."]))
-      .child(check(["agyStatus", "Antigravity footer", this.agyHere === false ? "Antigravity isn't installed on this computer." : "Needed for the agent's context in Agent rows, and Gemini's limits in Usage."]))
+      .child(group("Session footers", "The line under an agent's prompt. Agent rows, subagent rows and Usage read each agent directly: its files, or the session footer it already shows. Some details only reach a session footer, so those agents need Over9k's.", true))
+      .child(check(["claudeStatus", "Claude Code", "Needed for Claude's 5-hour and weekly limits (or API spend) in Usage."]))
+      .child(check(["agyStatus", "Antigravity", this.agyHere === false ? "Antigravity isn't installed on this computer." : "Needed for the agent's context in Agent rows, and Gemini's limits in Usage."]))
       .child(h_flex().flex_none().pt(4).gap(14).child(goTo("link-f-agents", "agents", "Agent rows")).child(goTo("link-f-usage", "usage", "Usage")))
-      .child(div().pt(8).text_size(11).text_color(t.dim).child("Codex and Pi need no footer. While one is on, it shows instead of any footer you set up yourself; yours comes back when it's off. Applies to agents you start next."));
+      .child(div().pt(8).text_size(11).text_color(t.dim).child("Codex and Pi need none. While one is on, it shows instead of any session footer you set up yourself; yours comes back when it's off. Applies to agents you start next."));
     if (this.page === "todos") return page
       .child(group("To-do", "Each project's list, in the right panel. Agents add to it and tick it too.", true))
       .child(check(TODO_ITEMS[0]))

@@ -76,8 +76,8 @@ with the plan's name, the percentage used in green, yellow from 50% or red from
 80%, and how long until it resets. Click a service to see every limit it
 reports, as bars. In the layout it sits above the sidebar's footer; on its
 own, it's a single line along the bottom of the window. Codex's numbers come
-from its latest session. Claude's need Over9k's Claude Code footer, and
-Gemini's its Antigravity footer (see [Footers](#footers)). Claude on Amazon
+from its latest session. Claude's need Over9k's session footer for Claude
+Code, and Gemini's the one for Antigravity (see [Session footers](#session-footers)). Claude on Amazon
 Bedrock has no plan limits, since it's paid per use, so its row shows what
 you've spent today instead, with each session's cost. Hide any you don't use
 in Options.
@@ -164,23 +164,23 @@ From each agent's own files, with nothing to set up:
 - **Antigravity:** the conversation file its process holds open, in
   `~/.gemini/antigravity-cli`, gives the model, effort, the conversation's
   title and when it last changed. Its context isn't readable there, so that
-  one needs a footer (below).
+  one needs a session footer (below).
 
-### Footers
+### Session footers
 
-Some details only reach an agent's footer, the status line under its prompt.
-For those, **Options › Footers** adds Over9k's footer, one switch per agent
-that needs it, each off unless you turn it on:
+Some details only reach an agent's session footer, the status line under its
+prompt. For those, **Options › Session footers** adds Over9k's, one switch per
+agent that needs it, each off unless you turn it on:
 
-- **Claude Code footer:** needed for your 5-hour and weekly limits (on Amazon
+- **Claude Code:** needed for your 5-hour and weekly limits (on Amazon
   Bedrock, each session's cost). It shows model and effort, context, how long
   the prompt cache lasts and those limits. "Show its limits" on the Usage
   strip turns it on too.
-- **Antigravity footer:** needed for the agent's context and Gemini's limits.
+- **Antigravity:** needed for the agent's context and Gemini's limits.
   It shows context and the limits per model group, under Antigravity's own.
 
-Codex and Pi need no footer. While one is on, it shows instead of any footer you
-set up yourself, and yours comes back when it's off.
+Codex and Pi need none. While one is on, it shows instead of any session footer
+you set up yourself, and yours comes back when it's off.
 
 ## What the installer changes
 

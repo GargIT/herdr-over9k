@@ -42,7 +42,7 @@ yellow or red, with when it resets. Hover a service to see every limit.
     from the input's `cost.total_cost_usd`.
   - **Codex:** its latest session file under `~/.codex/sessions`.
   - **Gemini:** `~/.cache/over9k/usage/antigravity.json`, from Antigravity's
-    status line (`agy-statusline.sh` in the Over9k layout: Options › Footers).
+    status line (`agy-statusline.sh` in the Over9k layout: Options › Session footers).
 
 ## Built from
 
