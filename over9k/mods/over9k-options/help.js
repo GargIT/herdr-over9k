@@ -68,6 +68,9 @@ export function helpTopics(view, t) {
         .when(info.length > 0, (x) => x.child(details)).child(chipEls));
   };
   const facts = (...parts) => parts.filter(Boolean).map((p) => (typeof p === "string" ? div().child(p) : p));
+  // A session footer under an agent's prompt: its logo, then the line.
+  const footerLine = (l, parts) => h_flex().h(26).px(8).gap(6).items_center().text_size(11.5).text_color(t.muted)
+    .child(logo(l, 13)).children(parts);
   const pct = (n) => div().text_color(n >= 80 ? t.ansi1 : n >= 50 ? t.ansi3 : t.ansi2).child(`${n}%`);
   // Something an agent started: status, its kind on the line, logo, name, details.
   const sub = (kind, text, details, { last = false, spin = false, l = null, chip = null } = {}) => h_flex().h(22).pl(10).pr(8).gap(3).items_center().text_size(12)
@@ -248,7 +251,18 @@ export function helpTopics(view, t) {
           note("Each service's 5-hour and weekly limits, above Settings"),
           line(pct(9), "Under 50%"), line(pct(52), "From 50%"), line(pct(81), "From 80%"),
           line(key("Click"), "Every limit, and when each resets"),
+          note("Claude's and Gemini's need their session footer (next page)"),
           note("Pick which show in Options › Usage"),
+        ]),
+      topic("Session footers",
+        frame(
+          footerLine("claude", [div().child("Opus 5.5 · high"), div().child("context"), pct(42), small("cache 59m"), div().child("5h"), pct(12), small("· 1h 59m"), div().child("week"), pct(83), small("· 2d 1h")]),
+          footerLine("antigravity", [div().child("context"), pct(21), div().child("5h"), pct(30), small("· 1h 0m"), div().child("week"), pct(20), small("· 6d 11h")])), [
+          note("The line under an agent's prompt. Agent rows, subagent rows and Usage read each agent directly: its files, or the session footer it shows"),
+          line(logo("claude"), "Claude Code: Over9k's adds your 5-hour and weekly limits (or API spend) to Usage"),
+          line(logo("antigravity"), "Antigravity: Over9k's adds its context to Agent rows, and Gemini's limits to Usage"),
+          line(h_flex().gap(4).child(logo("codex")).child(logo("pi")), "Codex and Pi: none needed"),
+          note("Turn them on in Options › Session footers. Any you set up yourself comes back when off"),
         ])),
 
     part("Extras",
