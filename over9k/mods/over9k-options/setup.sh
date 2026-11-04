@@ -1,7 +1,8 @@
 #!/bin/sh
 # Over9k's setup outside Herdr: what Options' switches turn on and off, and what
 # install.sh sets up. Linux, macOS, and Windows through Git Bash.
-#   setup.sh cleanup                  takes out hooks earlier versions of Over9k added
+#   setup.sh status on|off <mods>     Over9k's optional Claude Code status line (yours kept aside)
+#   setup.sh cleanup                  takes out what earlier versions of Over9k added
 #   setup.sh todo on|off <mods>       the to-do rule (CLAUDE.md, AGENTS.md), the `todo`
 #                                     command (~/.local/bin) and its hook (UserPromptSubmit)
 #   setup.sh default log|sync on|off  Log / Sync for projects that haven't set their own
@@ -36,16 +37,34 @@ hook() {
 }
 
 case "$cmd" in
+  status)
+    # Over9k's optional status line (claude-statusline.sh): on puts it in, keeping
+    # any other one aside; off puts that back (or removes ours).
+    was="$HOME/.claude/.over9k-statusline-was.json"
+    ours='test("over9k[^/\"]*/claude-statusline\\.sh")'
+    case "$mods" in *claude-statusline.sh) script=$mods ;; *) script="$mods/over9k/claude-statusline.sh" ;; esac
+    if [ "$on" = on ]; then
+      need_jq
+      [ -s "$settings" ] && jq -e "(.statusLine.command // \"\") as \$c | (\$c | length) > 0 and (\$c | $ours | not)" "$settings" >/dev/null 2>&1 \
+        && jq '.statusLine' "$settings" > "$was"
+      edit '.statusLine = {type: "command", command: $c, refreshInterval: 5}' --arg c "sh \"$script\""
+    elif [ -s "$was" ]; then
+      edit '.statusLine = $w[0]' --slurpfile w "$was" && rm -f "$was"
+    else
+      edit "if ((.statusLine.command // \"\") | $ours) then del(.statusLine) else . end"
+    fi
+    exit 0 ;;
   cleanup)
     # Removed features: next-prompt suggestions' Stop hook, and a status line an
-    # earlier Over9k put in (yours comes back; the status line is never Over9k's).
+    # earlier Over9k always put in (statusline.sh; yours comes back). The optional
+    # one (claude-statusline.sh) is left as it is.
     [ -s "$settings" ] && command -v jq >/dev/null 2>&1 || exit 0
     hook off Stop over9k-prompts/next.py ""
     was="$HOME/.claude/.over9k-statusline-was.json"
     if jq -e '(.statusLine.command // "") | test("over9k[^/\"]*/statusline\\.sh")' "$settings" >/dev/null 2>&1; then
       if [ -s "$was" ]; then edit '.statusLine = $w[0]' --slurpfile w "$was"; else edit 'del(.statusLine)'; fi
+      rm -f "$was"
     fi
-    rm -f "$was"
     exit 0 ;;
   todo)
     t="$mods/over9k-todos/todo.sh"

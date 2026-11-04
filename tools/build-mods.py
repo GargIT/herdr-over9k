@@ -44,7 +44,7 @@ SHARES = {
     "over9k-usage": {
         "mods": ["over9k-usage"],
         "place": {"over9k-usage": {"place": "bottom", "size": 30}},
-
+        "extra": {"over9k-usage": [("over9k-options", "setup.sh"), ("over9k", "claude-statusline.sh")]},
     },
     "over9k-switcher": {
         "mods": ["over9k-switcher"],

@@ -76,10 +76,10 @@ with the plan's name, the percentage used in green, yellow from 50% or red from
 80%, and how long until it resets. Click a service to see every limit it
 reports, as bars. In the layout it sits above the sidebar's footer; on its
 own, it's a single line along the bottom of the window. Codex's numbers come
-from its latest session, and Claude's from a file your own status line can
-write (see [Claude Code data](#claude-code-data)). Claude on Amazon Bedrock has
-no plan limits, since it's paid per use, so its row can show what you've spent
-today instead, with each session's cost. Hide any you don't use in Options.
+from its latest session. Claude's need Over9k's optional status line (see
+[Where agent details come from](#where-agent-details-come-from)). Claude on
+Amazon Bedrock has no plan limits, since it's paid per use, so its row shows
+what you've spent today instead, with each session's cost. Hide any you don't use in Options.
 
 Gemini's come from Antigravity's status line, which you set up by hand: add this
 to `~/.gemini/antigravity-cli/settings.json`, with `<mods>` replaced by your
@@ -159,23 +159,27 @@ The switcher keeps Ctrl+Tab on macOS because Cmd+Tab is macOS's own app
 switcher. The installers pick the right key file for your OS (`keys.json`, or
 `keys.macos.json` on macOS).
 
-## Claude Code data
+## Where agent details come from
 
-Over9k never touches Claude Code's status line. It reads Claude Code's own
-files instead:
+From each agent's own files, with nothing to set up:
 
-- **Agent details.** `~/.claude/sessions/<pid>.json` says which conversation
-  each running Claude Code is in, and its process says which Herdr terminal it's
-  in. The conversation file in `~/.claude/projects` then gives the model, effort,
-  how full the context is, when the prompt cache runs out and when it last
-  replied. Over9k keeps what it found in `~/.cache/over9k/agents`.
-- **Plan limits** are the exception: Claude Code keeps them in memory and only
-  ever hands them to a status line, never to a file. So the Claude usage row
-  appears only if something else saves them to `~/.cache/over9k/usage/claude.json`
-  as `{"at", "five_hour", "seven_day"}` (a status line's `rate_limits`). On
-  Bedrock, that's `{"at", "bedrock": true}`, with each session's cost per day
-  in `~/.cache/over9k/usage/bedrock/<session_id>.json` as
-  `{"days": {"2026-11-04": 2.5}, "project": "api"}`.
+- **Claude Code:** `~/.claude/sessions/<pid>.json` says which conversation each
+  running Claude Code is in, and its process says which Herdr terminal. The
+  conversation in `~/.claude/projects` gives the model, effort, context, when
+  the prompt cache runs out and when it last replied.
+- **Codex:** its session files in `~/.codex/sessions` and its terminal title.
+- **Pi:** its footer on screen, and Pi's own model list.
+- **Antigravity:** only its status line has model, context and Gemini's limits,
+  so those need the optional setup under [Usage](#usage-your-limits-before-you-hit-them).
+
+**Claude's plan limits** are the one thing no file has: Claude Code gives them
+only to a status line. To see them, turn on **Options › Claude Code › Status
+line** (or "Show its limits" on the Usage strip). That adds a line under
+Claude Code's prompt, with model, effort, context, cache time and your 5-hour
+and weekly limits, and saves the limits for Over9k (on Amazon Bedrock, each
+session's cost instead). It's off unless you turn it on. If you have your own
+status line, Over9k's takes its place while it's on, and yours comes back when
+it's off.
 
 ## What the installer changes
 
@@ -191,7 +195,8 @@ For Claude Code, and only if you say yes, it sets up two things:
 - A hook that reminds agents when request logging is on.
 
 Both can be turned off again in Options. It never touches your Claude Code
-status line. The installer's other options are
+status line; Over9k's own is a separate switch in Options, off unless you turn
+it on. The installer's other options are
 `--home <dir>`, `--no-claude` and `--yes` (`-HerdrHome`, `-NoClaude` and `-Yes`
 on Windows).
 

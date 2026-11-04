@@ -85,6 +85,8 @@ All colours are theme names.
 - **Options** (the bottom row) covers:
   - folders
   - what each row shows
+  - Claude Code: an optional status line (off by default) that shows model,
+    context, cache and limits under the prompt and feeds Claude's usage row
   - the hand-off and to-do rules for agents
 
   Its Help is illustrated, page by page.

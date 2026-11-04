@@ -4,8 +4,9 @@
 // that limit's used %; a click shows every limit as a bar. Local models have no
 // limits, so they aren't here.
 // Where the numbers come from (this computer):
-//   Claude       ~/.cache/over9k/usage/claude.json, if your own Claude Code status
-//                line writes it (Over9k installs none: README, Claude Code data); plan
+//   Claude       ~/.cache/over9k/usage/claude.json, saved by Over9k's optional status
+//                line (claude-statusline.sh: Options › Claude Code, or "Show its
+//                limits" here), the only thing Claude Code gives its limits to; plan
 //                from ~/.claude.json's oauthAccount.planDisplayName. On Amazon Bedrock
 //                (no plan limits, paid per use) it says so, and the row shows today's
 //                spend instead: usage/bedrock/<session>.json, each session's cost per day.
@@ -132,9 +133,32 @@ export default class Usage extends View {
     return used >= 80 ? t.ansi1 : used >= 50 ? t.ansi3 : t.ansi2;
   }
 
+  // Claude's limits only reach a status line: on its own, this mod offers to turn
+  // on Over9k's (claude-statusline.sh, setup.sh next to this file). Optional.
+  setUpClaude(cx) {
+    const mods = `${appHome().replace(/\\/g, "/")}/mods`;
+    cx.spawn(async (cx) => {
+      const r = await exec("sh", [`${mods}/over9k-usage/setup.sh`, "status", "on", `${mods}/over9k-usage/claude-statusline.sh`]).catch(() => null);
+      notify(r?.code === 0
+        ? { title: "Claude's limits are on their way", body: "They show after Claude Code's next reply, with a status line under its prompt. Agents started from now on get it.", level: "info" }
+        : { title: "Couldn't turn on the status line", body: (r?.stderr ?? "").trim() || "Needs sh and jq.", level: "warning" });
+      this.checkClaude(cx);
+    });
+  }
+
+  checkClaude(cx) {
+    readTextFile(`${home()}/.claude/settings.json`).then((text) => {
+      const ours = /over9k[^/"]*\/claude-statusline\.sh/.test(text ?? "");
+      const has = text != null;
+      if (ours !== this.claudeOurs || has !== this.claudeHere) { this.claudeOurs = ours; this.claudeHere = has; cx.notify(); }
+    }).catch(() => null);
+  }
+
   // On its own: one line across the bottom. Each service's name, plan, the most
   // used limit and when it resets; hover shows every limit.
   strip(t, cx) {
+    if (this.claudeChecked !== true) { this.claudeChecked = true; this.checkClaude(cx); }
+    const missingClaude = this.claudeHere && !this.claudeOurs && !this.services.some((s) => s.key === "claude");
     return h_flex().size_full().px(12).gap(18).items_center().bg(t.chrome).border_t(1).border_color(t.border).text_size(12)
       .children(this.services.map((s) => {
         const top = s.limits?.length ? s.limits.reduce((a, b) => (b.used > a.used ? b : a)) : null;
@@ -147,7 +171,11 @@ export default class Usage extends View {
           .when(Boolean(top), (el) => el.child(div().text_color(this.color(t, top.used)).child(`${Math.round(top.used)}%`))
             .when(top.left != null, (el) => el.child(div().text_size(11).text_color(t.dim).child(left(top.left)))));
       }))
-      .when(!this.services.length, (el) => el.child(div().text_color(t.dim).child("No usage yet: start Claude Code, Codex or Antigravity")));
+      .when(missingClaude, (el) => el.child(h_flex().id("strip-setup").flex_none().gap(6).items_center().px(7).py(2).rounded(5).cursor_pointer()
+        .text_color(t.accent).hover((x) => x.bg(t.hover)).on_click((_e, cx) => this.setUpClaude(cx))
+        .tooltip("Turns on Over9k's Claude Code status line, which shows a line under the prompt and saves the limits. Your own comes back when it's off.")
+        .child(div().text_color(t.muted).child("Claude")).child("Show its limits")))
+      .when(!this.services.length && !missingClaude, (el) => el.child(div().text_color(t.dim).child("No usage yet: start Claude Code, Codex or Antigravity")));
   }
 
   render(cx) {

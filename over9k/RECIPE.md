@@ -201,9 +201,14 @@ Left to right. All colours are theme names (`canvas`, `chrome`, `background`,
   the last reply's input tokens, cache expiry from its cache write) and writes
   `~/.cache/over9k/agents/<terminal>.json`. The sidebar runs it every 5s, on
   each computer with a Claude Code agent.
-- Claude's plan limits are never in a file: the Claude usage row shows only if
-  `~/.cache/over9k/usage/claude.json` exists (see Claude Code data in the
-  repo's README).
+- Claude's plan limits are never in a file; Claude Code only hands them to a
+  status line. Options › Claude Code › Status line (off by default) puts in
+  `over9k/claude-statusline.sh`, which shows model, effort, context, cache and
+  limits under the prompt and saves the limits to
+  `~/.cache/over9k/usage/claude.json` (on Bedrock, each session's cost per day
+  in `usage/bedrock/`). Any status line already there is kept in
+  `~/.claude/.over9k-statusline-was.json` and comes back when it's off. The
+  installer never turns it on.
 - A variable-height `list` ignores `track_scroll`. Only `v_virtual_list` can be
   scrolled from code.
 - Hover style can linger in screenshots taken right after a reload.
