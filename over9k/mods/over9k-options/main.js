@@ -273,7 +273,7 @@ export default class SidebarOptions extends View {
     if (this.page === "claude") return page
       .child(group("Status lines", "Adds a line under an agent's prompt, and gives Over9k what only that line receives.", true))
       .child(check(["claudeStatus", "Claude Code", "Shows the model, context, cache and limits, and fills Claude's usage row. Replaces your own while it's on."]))
-      .child(check(["agyStatus", "Antigravity", this.agyHere === false ? "Antigravity isn't installed on this computer." : "Shows the limits for each model, and fills Gemini's usage row and agent details. Replaces your own while it's on."]))
+      .child(check(["agyStatus", "Antigravity", this.agyHere === false ? "Antigravity isn't installed on this computer." : "Shows the limits for each model, and fills Gemini's usage row and the agent's context. Replaces your own while it's on."]))
       .child(div().pt(8).text_size(11).text_color(t.dim).child("Codex and Pi already show their own. Changes apply to agents you start next."));
     if (this.page === "todos") return page
       .child(group("To-do", "Each project's list, in the right panel. Agents add to it and tick it too.", true))

@@ -133,8 +133,9 @@ git`. On Windows, it runs its scripts with [Git for Windows](https://git-scm.com
 add Git's tools to your PATH with `-AddGitToPath`). The macOS and Windows paths
 haven't been run there yet, so please report what doesn't work. Two extras read
 Linux's `/proc` and stay off elsewhere: finding Codex sessions, and listing
-Antigravity's subagents. Claude Code agents' details find their terminal
-through `/proc` on Linux and `ps` on macOS, and are left out on Windows.
+Antigravity's subagents. Claude Code and Antigravity agents' details find
+their terminal through `/proc` on Linux and `ps` on macOS, and are left out on
+Windows.
 
 ## Shortcuts
 
@@ -161,8 +162,10 @@ From each agent's own files, with nothing to set up:
   the prompt cache runs out and when it last replied.
 - **Codex:** its session files in `~/.codex/sessions` and its terminal title.
 - **Pi:** its footer on screen, and Pi's own model list.
-- **Antigravity:** its files only hold internal model names, so its model,
-  context and name need its status line (below).
+- **Antigravity:** the conversation file its process holds open, in
+  `~/.gemini/antigravity-cli`, gives the model, effort, the conversation's
+  title and when it last changed. Its context isn't readable there, so that
+  one needs its status line (below).
 
 ### Status lines
 
@@ -176,8 +179,7 @@ place while it's on, and yours comes back when it's off.
   rows (on Amazon Bedrock, each session's cost instead). "Show its limits" on
   the Usage strip turns it on too.
 - **Antigravity:** the 5-hour and weekly limits per model group, under its
-  own line. Over9k takes Gemini's limits, and the agent's model, context and
-  conversation name (that needs `sqlite3`).
+  own line. Over9k takes Gemini's limits and the agent's context from it.
 
 Codex and Pi show their own line, and Over9k reads theirs from their files.
 

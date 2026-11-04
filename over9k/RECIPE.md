@@ -200,7 +200,10 @@ Left to right. All colours are theme names (`canvas`, `chrome`, `background`,
   of its conversation (model, effort from the last API request, context from
   the last reply's input tokens, cache expiry from its cache write) and writes
   `~/.cache/over9k/agents/<terminal>.json`. The sidebar runs it every 5s, on
-  each computer with a Claude Code agent.
+  each computer with a Claude Code agent. `over9k/agy-info.py` does the same for Antigravity from
+  agy's own files (the presence lock its process holds, the conversation's
+  `gen_metadata`, `conversation_summaries.db`): model, effort, title, last
+  change. Context only comes from its optional status line.
 - Claude's plan limits are never in a file; Claude Code only hands them to a
   status line. Options › Status lines › Claude Code (off by default) puts in
   `over9k/claude-statusline.sh`, which shows model, effort, context, cache and

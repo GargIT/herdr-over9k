@@ -109,6 +109,9 @@ const multi = (e) => Boolean(e?.modifiers && (e.modifiers.shift || e.modifiers.p
 const inside = (cwd, dir) => cwd === dir || cwd?.startsWith(dir + "/");
 
 const isPi = (a) => a.app === "pi" || a.program?.key === "pi";
+// Possibly Antigravity: agy-info.py, which only answers for terminals agy runs in,
+// is asked about any agent that isn't Claude Code, Codex or Pi.
+const isAgy = (a) => !isClaude(a) && !isPi(a) && !/codex/i.test(`${a.app ?? ""} ${a.program?.key ?? ""}`);
 const isClaude = (a) => a.app === "claude-code" || a.program?.key === "claude";
 // Pi's footer: "↑5.5k ↓72 8.6%/66k (auto)  …  qwen3.8-27b • medium" (tokens in and
 // out once it has replied, then context used, model, thinking).
@@ -638,27 +641,35 @@ export default class Spaces extends View {
         const listed = agents();
         // (A terminal says what it runs by its program: "agent" isn't there.)
         const kids = terminals().filter((k) => (k.program?.agent || isAgentProgram(k.agent)) && k.state === "live" && !listed.some((a) => a.address === k.address));
-        // Claude Code's, on each computer that runs one: claude-info.py there.
+        // Claude Code's and Antigravity's, on each computer that runs one: claude-info.py
+        // and agy-info.py there, from each one's own files.
         this.ciScript ??= await readTextFile(`${appHome()}/mods/over9k/claude-info.py`).catch(() => null);
-        const ci = {};
+        this.aiScript ??= await readTextFile(`${appHome()}/mods/over9k/agy-info.py`).catch(() => null);
+        const ci = {}, ai = {};
         for (const a of [...listed, ...kids]) {
-          if (!this.ciScript || !isClaude(a)) continue;
+          const [script, into] = isClaude(a) ? [this.ciScript, ci] : isAgy(a) ? [this.aiScript, ai] : [null, null];
+          if (!script) continue;
           const [m] = a.address.includes("/") ? a.address.split("/") : [null];
           const key = m ?? "";
-          if (key in ci || (m && !this.machines.some((x) => x.name === m && x.state === "connected"))) continue;
-          const r = await (m ? exec("python3", ["-c", this.ciScript], { on: m }) : python(["-c", this.ciScript])).catch(() => null);
-          try { ci[key] = JSON.parse(r?.stdout || "{}"); } catch { ci[key] = {}; }
+          if (key in into || (m && !this.machines.some((x) => x.name === m && x.state === "connected"))) continue;
+          const r = await (m ? exec("python3", ["-c", script], { on: m }) : python(["-c", script])).catch(() => null);
+          try { into[key] = JSON.parse(r?.stdout || "{}"); } catch { into[key] = {}; }
         }
         for (const a of [...listed, ...kids]) {
           const [m, t] = a.address.includes("/") ? a.address.split("/") : [null, a.address];
           if (m && !(this.remote[m]?.home && this.machines.some((x) => x.name === m && x.state === "connected"))) continue;
           try {
             const found = ci[m ?? ""]?.[t];
-            // Others (Antigravity): the file its status line writes, there.
-            const text = found ? null : m ? await readTextFile(`${this.remote[m].home}/.cache/over9k/agents/${t}.json`, { on: m })
-              : await readTextFile(`${this.infoDir}/${a.address}.json`);
-            if (found || text) {
-              const i = found ?? JSON.parse(text);
+            const agy = ai[m ?? ""]?.[t];
+            // Antigravity: what its status line saved, if it's on, adds the context
+            // (agy's files don't have it readably); the rest from agy-info.py wins.
+            const text = found ? null : m ? await readTextFile(`${this.remote[m].home}/.cache/over9k/agents/${t}.json`, { on: m }).catch(() => null)
+              : await readTextFile(`${this.infoDir}/${a.address}.json`).catch(() => null);
+            let saved = null;
+            try { saved = text ? JSON.parse(text) : null; } catch {}
+            const merged = agy ? { ...agy, context: saved?.context ?? null, out: saved?.out, lastAt: agy.lastAt ?? saved?.lastAt ?? null } : saved;
+            if (found || merged) {
+              const i = found ?? merged;
               // Past the prompt cache's expiry (cacheUntil, seconds): the next message re-reads everything.
               i.cold = i.cacheUntil != null && Date.now() / 1000 > i.cacheUntil;
               info[a.address] = i;

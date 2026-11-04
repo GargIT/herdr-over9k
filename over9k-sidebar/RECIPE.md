@@ -128,6 +128,11 @@ All colours are theme names.
   `HC_TERMINAL_ID`: `/proc` on Linux, `ps -wwE` on macOS; none on Windows),
   reads the end of the conversation and writes
   `~/.cache/over9k/agents/<terminal>.json`.
+  Antigravity's come from `agy-info.py`: the `presence/<id>.lock` the agy
+  process holds open (`/proc`, or `lsof` on macOS) names its conversation, whose
+  newest `gen_metadata` holds "Gemini 4 Argon (Medium)", and
+  `conversation_summaries.db` its title. Its context only comes from its
+  optional status line.
 - **Linux-only extras:** Codex session detection, Antigravity subagents and the
   "SSH'd from here" links read `/proc`.
 - **Windows:** needs Git for Windows' `sh`.
