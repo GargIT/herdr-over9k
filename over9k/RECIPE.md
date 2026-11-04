@@ -177,7 +177,7 @@ Left to right. All colours are theme names (`canvas`, `chrome`, `background`,
   - Python 3 runs the Timeline reader and the TODO.md sync. `ps`, `curl` (local
     model servers) and `kill` are used too.
 - **Outside Herdr**, turned on from Options:
-  - `over9k/statusline.sh` as Claude Code's status line. It writes
+  - `over9k/statusline.sh` as Claude Code's status line. It shows nothing itself (your own status line, if any, still shows) and writes
     `~/.cache/claude-agents/<terminal>.json` (model, effort, context, cache,
     transcript) and `~/.cache/over9k/usage/claude.json`, which is what the
     sidebar, the usage rows and the Timeline read.

@@ -95,7 +95,7 @@ All colours are theme names.
 - **`mods/over9k/`**, with `mod.json` set to `{"place": "left", "size": 268}`:
   - `main.js`: the sidebar.
   - `agent-name.js`, `close-plan.js`.
-  - `statusline.sh`: Claude Code's status line. It writes
+  - `statusline.sh`: Claude Code's status line. It shows nothing itself (your own status line, if any, still shows) and writes
     `~/.cache/claude-agents/<terminal>.json`, which the sidebar reads.
   - `handoff.sh`, copied to `~/.local/share/over9k` for agents to run.
   - The helper scripts `subagents.sh`, `tasks.sh`, `codex.sh`,

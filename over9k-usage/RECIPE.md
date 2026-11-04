@@ -28,9 +28,9 @@ yellow or red, with when it resets. Hover a service to see every limit.
 
 - **Hover:** a service shows every limit and its reset time.
 - **"Show its limits"** runs `setup.sh status on <this mod>/statusline.sh`,
-  which makes Over9k's status line Claude Code's. Someone else's status line is
-  kept in `~/.claude/.over9k-statusline-was.json` and comes back when it's
-  turned off. Claude's numbers appear after the next reply.
+  which makes Over9k's status line Claude Code's. It shows nothing itself:
+  someone else's status line is kept in `~/.claude/.over9k-statusline-was.json`,
+  still shows (Over9k's runs it), and is put back when it's turned off. Claude's numbers appear after the next reply.
 - **Where the data comes from:**
   - **Claude:** `~/.cache/over9k/usage/claude.json`, written by the status
     line, plus the plan name from `~/.claude.json`. On Bedrock
@@ -47,7 +47,7 @@ yellow or red, with when it resets. Hover a service to see every limit.
 - **`mods/over9k-usage/`**, with `mod.json` set to
   `{"place": "bottom", "size": 30}`:
   - `main.js`: the strip, or the layout's rows.
-  - `statusline.sh`: Claude Code's status line. It also writes
+  - `statusline.sh`: Claude Code's status line. It shows nothing itself (your own status line, if any, still shows) and writes
     `~/.cache/claude-agents/<terminal>.json`.
   - `setup.sh`: the status line on or off.
 - `main.js` draws rows when the layout has a block with id `usage` holding this

@@ -168,8 +168,9 @@ Over9k's key bindings into `keys.json`. Your earlier `keys.json` is kept as
 uninstall.
 
 For Claude Code, and only if you say yes, it sets up three things:
-- Over9k's status line, with your own kept aside. It's where the sidebar's agent
-  details, the usage rows and the Timeline get their data.
+- Over9k's status line, which shows nothing itself: it only reads what Claude
+  Code tells a status line, for the sidebar's agent details, the usage rows and
+  the Timeline. If you have your own status line, it still shows.
 - The to-do rule in `~/.claude/CLAUDE.md` (and in Codex's and Pi's `AGENTS.md`),
   plus the `todo` command in `~/.local/bin`.
 - A hook that reminds agents when request logging is on.

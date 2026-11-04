@@ -1,12 +1,12 @@
 #!/bin/sh
-# Claude Code status line: model, effort, context window used, and Claude usage
-# (5-hour and weekly limits) as colored percents with time to reset, and how long
-# the prompt cache lasts (settings.json re-runs it every 30s so that counts down),
-# then a red "exp." at the end once it has run out.
-# Inside Herdr it also saves model, effort, ultracode, context, cache expiry and
-# transcript for this terminal (~/.cache/claude-agents/<terminal>.json), which
-# Over9k's sidebar shows under the agent and its Timeline reads, and Claude's
-# limits (~/.cache/over9k/usage/claude.json) for the usage rows.
+# Over9k's Claude Code status line: it shows nothing of its own. It only reads
+# what Claude Code passes a status line, and saves it for Over9k:
+# - this terminal's model, effort, ultracode, context, cache expiry, last reply
+#   and transcript (~/.cache/claude-agents/<terminal>.json), for the sidebar's
+#   agent details, its "exp." and the Timeline;
+# - Claude's limits (~/.cache/over9k/usage/claude.json), or on Bedrock each
+#   session's cost per day, for the usage rows.
+# Your own status line, if you had one, still shows: it runs after this.
 # Set up by Options › Claude Code › Status line (settings.json statusLine).
 # Needs jq.
 in=$(cat)
@@ -62,23 +62,12 @@ if [ "$bedrock" = yes ]; then
 fi
 printf '%s' "$in" | jq -ce 'select(.rate_limits != null) | {at: (now | floor), five_hour: .rate_limits.five_hour, seven_day: .rate_limits.seven_day}' \
   > "$u/claude.json.tmp" 2>/dev/null && mv "$u/claude.json.tmp" "$u/claude.json" || rm -f "$u/claude.json.tmp"
-printf '%s' "$in" | jq -r --argjson cache "$cache" '
-  def left: (. - now) as $s | if $s <= 0 then "now"
-    elif $s < 3600 then "\($s / 60 | floor)m"
-    elif $s < 86400 then "\($s / 3600 | floor)h \($s % 3600 / 60 | floor)m"
-    else "\($s / 86400 | floor)d \($s % 86400 / 3600 | floor)h" end;
-  def pct: (if . >= 80 then "31" elif . >= 50 then "33" else "32" end) as $c
-    | "\u001b[\($c)m\(round)%\u001b[0m";
-  def tokens: if . >= 1000000 then "\(. / 100000 | round / 10)M" | sub("\\.0M$"; "M")
-    elif . >= 1000 then "\(. / 1000 | round)k" else "\(.)" end;
-  def show($name): "\($name) \(.used_percentage | pct) · resets in \(.resets_at | left)";
-  def dim: "\u001b[2m\(.)\u001b[0m";
-  [ ([.model.display_name, .effort.level] | map(select(. != null)) | join(" · ") | select(. != "")),
-    (.context_window | select(.used_percentage != null)
-      | "context \(.used_percentage | pct) "
-        + ("(\((.current_usage | (.input_tokens // 0) + (.cache_creation_input_tokens // 0) + (.cache_read_input_tokens // 0)) | tokens)/\(.context_window_size | tokens))" | dim)),
-    ($cache | select(. != null and . > now) | "cache \(left)" | dim),
-    (.rate_limits.five_hour // empty | show("5h")),
-    (.rate_limits.seven_day // empty | show("usage")),
-    ($cache | select(. != null and . <= now) | "\u001b[31mexp.\u001b[0m") ]
-  | join("   ")'
+# What shows under the prompt isn't Over9k's: your own status line, if you had
+# one when Over9k's took its place (kept in ~/.claude/.over9k-statusline-was.json),
+# runs with the same input and its output shows; otherwise nothing does.
+was="$HOME/.claude/.over9k-statusline-was.json"
+if [ -s "$was" ]; then
+  cmd=$(jq -r '.command // empty' "$was" 2>/dev/null)
+  [ -n "$cmd" ] && printf '%s' "$in" | sh -c "$cmd"
+fi
+exit 0

@@ -263,7 +263,7 @@ export default class SidebarOptions extends View {
       .child(check(["timeline", "Timeline", "On: the Timeline button and panel. Off: both hidden"]));
     if (this.page === "claude") return page
       .child(group("Claude Code", "What Over9k sets up in Claude Code's own settings (~/.claude/settings.json). Each switch shows what's there now.", true))
-      .child(check(["claudeStatus", "Status line", "Model, context, cache and limits under the prompt. The sidebar's agent details, the usage rows and the Timeline read it. Your own status line is kept aside and comes back when this is off"]))
+      .child(check(["claudeStatus", "Status line", "Lets Over9k read what Claude Code tells a status line: the sidebar's agent details, the usage rows and the Timeline need it. It shows nothing itself; your own status line still shows, and comes back as it was when this is off"]))
       .child(div().pt(8).text_size(11).text_color(t.dim).child("The to-do rule and its hook come with To-do (Options › To-do). New settings reach agents you start after the change."));
     if (this.page === "todos") return page
       .child(group("To-do", "Each project's list, in the right panel. Agents add to it and tick it too.", true))
