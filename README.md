@@ -37,10 +37,20 @@ from the same menu when you're done.
 
 ### [To-do](over9k-todo): agentic to-dos
 
-A to-do list per project that your agents keep for you. They add what you ask
-for as you ask it and tick it off when it's done, in step with the project's own
-TODO.md. Any to-do goes to the current conversation or a new agent in one click,
-alone or several at once.
+A to-do list for every project, kept by you and your agents together. Agents get
+a `todo` command and a short rule (in CLAUDE.md for Claude Code, AGENTS.md for
+Codex and Pi). With **Log** on, they add what you ask for the moment you ask it,
+reword an item when you change your mind, and tick it off once it's done and
+checked. Turn on **Sync** and the list stays in step with the project's own
+TODO.md. Lines in a project's TODO.md that aren't on the list yet show up as
+suggestions, to add with one click or delete from the file.
+
+You can add to-dos yourself in plain words: `@fri 3pm` or `@tomorrow` sets when
+it's due, and `#api` files it under another project. Any to-do goes to the
+current conversation or to a new agent of your choice, with a brief to tick it
+when it's done. Pick several to mark done, send or delete together. The panel
+opens on the project you're in, with **All** a tab away, and done items keep
+when they were finished.
 
 ### [Timeline](over9k-timeline): what happened, prompt by prompt
 
@@ -49,11 +59,24 @@ on it, when it finished, the files it changed, the commands it ran and what it
 replied, with the tokens it wrote. While the agent works, the time and tokens
 tick live, matching the CLI, and the header shows how full its context is.
 
-### [Usage](over9k-usage) and [Switcher](over9k-switcher)
+### [Usage](over9k-usage): your limits before you hit them
 
-Your Claude, Codex and Gemini limits stay in view, coloured green, yellow or red,
-with when each resets. And Ctrl+Tab jumps between agents the way you switch
-apps, most recent first, across every space and computer.
+The 5-hour and weekly limits of each plan you use (Claude, Codex and Gemini),
+with the plan's name, the percentage used in green, yellow from 50% or red from
+80%, and how long until it resets. Click a service to see every limit it
+reports, as bars. In the layout it sits above the sidebar's footer; on its
+own, it's a single line along the bottom of the window. Claude's numbers come
+from its status line, which Over9k can set up for you, Codex's from its latest
+session, and Gemini's from Antigravity. Hide any you don't use in Options.
+
+### [Switcher](over9k-switcher): Ctrl+Tab between agents
+
+Jump between agents the way you switch apps. Hold Ctrl and tap Tab: a list
+opens with every agent on every space and every connected computer, most
+recently used first, each with its status, the name of its conversation and the
+space it's in. Tap Tab again to move down, Shift+Tab to go back, and let go of
+Ctrl to land on that agent, switching space if it has to. A single tap takes you
+straight back to the agent you were in before.
 
 ### All together
 
