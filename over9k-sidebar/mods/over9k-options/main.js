@@ -271,10 +271,10 @@ export default class SidebarOptions extends View {
       .child(group("Timeline", "Your prompts in the agent you're in, in the right panel: what it did, how long it worked, when it finished, tokens.", true))
       .child(check(["timeline", "Timeline", "On: the Timeline button and panel. Off: both hidden"]));
     if (this.page === "claude") return page
-      .child(group("Status lines", "Over9k reads each agent's details from its own files. A status line adds what only it receives.", true))
-      .child(check(["claudeStatus", "Claude Code", "Without it, Over9k reads the model, effort, context and cache from Claude Code's files. With it, you also get your 5-hour and weekly limits (or Bedrock spend) in the usage rows, and a line under the prompt. It replaces your own while it's on."]))
-      .child(check(["agyStatus", "Antigravity", this.agyHere === false ? "Antigravity isn't installed on this computer." : "Without it, Over9k reads the model, effort and conversation name from Antigravity's files. With it, you also get the agent's context and Gemini's limits in the usage rows, and a line under Antigravity's own. It replaces your own while it's on."]))
-      .child(div().pt(8).text_size(11).text_color(t.dim).child("Codex and Pi already show their own. Changes apply to agents you start next."));
+      .child(group("Status lines", "Details come from each agent's files. A status line adds more.", true))
+      .child(check(["claudeStatus", "Claude Code", "Off: model, context, cache. On: also your limits. Replaces your own."]))
+      .child(check(["agyStatus", "Antigravity", this.agyHere === false ? "Antigravity isn't installed on this computer." : "Off: model and name. On: also context and limits. Replaces your own."]))
+      .child(div().pt(8).text_size(11).text_color(t.dim).child("Codex and Pi need none. Applies to new agents."));
     if (this.page === "todos") return page
       .child(group("To-do", "Each project's list, in the right panel. Agents add to it and tick it too.", true))
       .child(check(TODO_ITEMS[0]))
