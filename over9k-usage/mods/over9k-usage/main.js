@@ -6,7 +6,9 @@
 // Where the numbers come from (this computer):
 //   Claude       ~/.cache/over9k/usage/claude.json, written by Claude Code's
 //                status line (over9k/statusline.sh: Options › Claude Code); plan from
-//                ~/.claude.json's oauthAccount.planDisplayName.
+//                ~/.claude.json's oauthAccount.planDisplayName. On Amazon Bedrock
+//                (no plan limits, paid per use) it says so, and the row shows today's
+//                spend instead: usage/bedrock/<session>.json, each session's cost per day.
 //   Gemini       ~/.cache/over9k/usage/antigravity.json, written by
 //                Antigravity's (over9k/antigravity/agy-statusline.sh, optional: README):
 //                gemini-* and 3p-* (Claude and GPT) buckets, and the plan.
@@ -43,6 +45,8 @@ function windowName(min) {
   return min % 1440 === 0 ? `${min / 1440}d` : min % 60 === 0 ? `${min / 60}h` : `${min}m`;
 }
 // "Google AI Ultra" is "Ultra"; "Claude Max" is "Max".
+const money = (n) => `$${(n ?? 0).toFixed(2)}`;
+const SPEND_TIP = "Today's cost on Amazon Bedrock: Claude Code's estimate, not your AWS bill";
 const planName = (p) => (p ?? "").replace(/^(google ai|claude|chatgpt)\s+/i, "").replace(/^\w/, (c) => c.toUpperCase()) || null;
 
 async function readJson(path) {
@@ -71,7 +75,14 @@ export default class Usage extends View {
     const limit = (label, used, resetsAt) => resetsAt && resetsAt <= now ? { label, used: 0, left: null } : { label, used: Math.max(0, Math.min(100, used ?? 0)), left: resetsAt ? resetsAt - now : null };
 
     const claude = await readJson(`${dir}/claude.json`);
-    if (claude) {
+    if (claude?.bedrock) {
+      // Today's spend: each session's cost today, by project (Claude Code's estimate).
+      const d = new Date(), day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      const r = await exec("sh", ["-c", 'for f in "$1"/*.json; do [ -f "$f" ] && cat "$f" && echo; done', "sh", `${dir}/bedrock`]).catch(() => null);
+      const sessions = (r?.stdout ?? "").split("\n").map((l) => { try { return JSON.parse(l); } catch { return null; } })
+        .filter((x) => x?.days?.[day] > 0).map((x) => ({ label: x.project || "session", cost: x.days[day] })).sort((a, b) => b.cost - a.cost);
+      out.push({ key: "claude", name: "Claude", plan: "Bedrock", spend: sessions.reduce((n, x) => n + x.cost, 0), sessions });
+    } else if (claude) {
       const plan = (await exec("sh", ["-c", CLAUDE_PLAN]).catch(() => null))?.stdout.trim();
       out.push({ key: "claude", name: "Claude", plan: planName(plan), limits: [
         claude.five_hour && limit("5h", claude.five_hour.used_percentage, claude.five_hour.resets_at),
@@ -106,7 +117,7 @@ export default class Usage extends View {
   // The block's height: every row, plus the open ones' limits.
   fit() {
     if (!inLayout()) return;
-    const h = this.services.length ? 6 + this.services.reduce((n, s) => n + ROW + (this.open.has(s.key) ? (s.limits?.length ?? 0) * LIMIT + 4 : 0), 0) : 0;
+    const h = this.services.length ? 6 + this.services.reduce((n, s) => n + ROW + (this.open.has(s.key) ? Math.max(1, s.spend != null ? s.sessions.length : s.limits?.length ?? 0) * LIMIT + 4 : 0), 0) : 0;
     if (h !== this.height) { this.height = h; run("layout.resize", { id: BLOCK, px: h }); }
   }
 
@@ -150,10 +161,12 @@ export default class Usage extends View {
     return h_flex().size_full().px(12).gap(18).items_center().bg(t.chrome).border_t(1).border_color(t.border).text_size(12)
       .children(this.services.map((s) => {
         const top = s.limits?.length ? s.limits.reduce((a, b) => (b.used > a.used ? b : a)) : null;
-        const all = (s.limits ?? []).map((l) => `${l.label}: ${Math.round(l.used)}%${l.left != null ? `, resets in ${left(l.left)}` : ""}`).join("\n");
+        const all = s.spend != null ? [SPEND_TIP, ...s.sessions.map((x) => `${x.label}: ${money(x.cost)}`)].join("\n")
+          : (s.limits ?? []).map((l) => `${l.label}: ${Math.round(l.used)}%${l.left != null ? `, resets in ${left(l.left)}` : ""}`).join("\n");
         return h_flex().id(`strip-${s.key}`).flex_none().gap(6).items_center().when(Boolean(all), (el) => el.tooltip(all))
           .child(div().text_color(t.muted).child(s.name))
           .when(Boolean(s.plan), (el) => el.child(div().px(5).py(1).rounded(4).bg(t.raised).text_size(10.5).text_color(t.accent).child(s.plan)))
+          .when(s.spend != null, (el) => el.child(div().text_color(t.foreground).child(money(s.spend))).child(div().text_size(11).text_color(t.dim).child("today")))
           .when(Boolean(top), (el) => el.child(div().text_color(this.color(t, top.used)).child(`${Math.round(top.used)}%`))
             .when(top.left != null, (el) => el.child(div().text_size(11).text_color(t.dim).child(left(top.left)))));
       }))
@@ -186,11 +199,18 @@ export default class Usage extends View {
             // The reset time gives way first when the sidebar is narrow (cut, then
             // gone); the dot, the % (fixed width, right-aligned) and the arrow stay put.
             .child(h_flex().flex_1().min_w(0).justify_end().overflow_hidden()
+              .when(s.spend != null && !open, (el) => el.child(dim("today").id(`spend-${s.key}`).tooltip(SPEND_TIP)))
               .when(Boolean(top) && !open && top.left != null, (el) => el.child(h_flex().id(`reset-${s.key}`).min_w(0).gap(3).items_center().tooltip(`Resets in ${left(top.left)}`)
                 .child(dim(left(top.left)).min_w(0).truncate()))))
             .when(Boolean(top) && !open, (el) => el
               .child(div().w(32).flex_none().flex().justify_end().text_color(this.color(t, top.used)).child(`${Math.round(top.used)}%`)))
+            .when(s.spend != null && !open, (el) => el.child(div().flex_none().pl(6).text_color(t.foreground).child(money(s.spend))))
             .child(svg(`mods/workspace-chrome/chevron-${open ? "down" : "right"}.svg`).size(8).flex_none().flex_shrink_0().text_color(t.dim)))
+          .when(open && s.spend != null, (el) => el.child(v_flex().px(4).pb(4)
+            .when(!s.sessions.length, (el) => el.child(div().h(LIMIT).flex().items_center().text_size(11.5).text_color(t.dim).child("No sessions today")))
+            .children(s.sessions.map((x) => h_flex().h(LIMIT).items_center().gap(7).text_size(11.5)
+              .child(div().flex_1().min_w(0).truncate().text_color(t.muted).child(x.label))
+              .child(div().flex_none().text_color(t.foreground).child(money(x.cost)))))))
           .when(open && Boolean(s.limits), (el) => el.child(v_flex().px(4).pb(4).children(s.limits.map((l) =>
             h_flex().h(LIMIT).items_center().gap(7).text_size(11.5)
               .child(div().w(82).flex_none().truncate().text_color(t.muted).child(l.label))

@@ -1,6 +1,6 @@
 // Over9k: the sidebar's spaces, terminals and agents in one list (help and
 // options: over9k-options). Workspace spaces: stable colored avatars, worktrees under their checkout,
-// grouped by machine when more than one is known. After a space's name, the repo
+// grouped by computer (This computer always has its heading). After a space's name, the repo
 // its first terminal is in now, only where unusual: branch, ahead/behind. Agent state lives in the agents list, not here. Click to
 // switch, right-click for its menu, drag to reorder.
 // Projects are git repos in the projects folder (Options › Folders) and folders with a CLAUDE.md,
@@ -2160,7 +2160,7 @@ export default class Spaces extends View {
     return out;
   }
 
-  // The rows, under a header per machine once one isn't this computer.
+  // The rows, under a heading per computer: This computer always, then each other one.
   grouped(t, collapsed) {
     // This computer's rows: ~, then spaces in folders that aren't projects (white),
     // then projects, each group in Herdr's order.
@@ -2193,7 +2193,7 @@ export default class Spaces extends View {
     const atHome = (r) => !r.w.machine && (r.w.folder ?? "").replace(/\/+$/, "") === homeDir();
     const homeAt = rows.findIndex(atHome);
     const drawAll = (list) => list.flatMap((r) => [...draw(r), ...(r === rows[homeAt] ? others() : [])]);
-    if (!remote.length) return loading(null) && !rows.length ? [loadingRow(null)] : [...(homeAt < 0 ? others() : []), ...drawAll(rows), ...closed()];
+    // This computer always gets its heading (its +, local servers), others too.
     const machineNames = [null, ...remote];
     return machineNames.flatMap((m) => {
       const mine = rows.filter((r) => (r.w.machine ?? null) === m);

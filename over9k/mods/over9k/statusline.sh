@@ -38,6 +38,28 @@ if [ -n "$HC_TERMINAL_ID" ]; then
 fi
 # Claude's limits for the sidebar's usage section (over9k-usage), when it has them.
 u="$HOME/.cache/over9k/usage"; mkdir -p "$u"
+# Claude on Amazon Bedrock has no plan limits; it's paid per use. The usage rows
+# show today's spend instead: each session's cost per day (Claude Code's running
+# total for the session, split at midnight), in usage/bedrock/<session>.json.
+bedrock=no
+case "${CLAUDE_CODE_USE_BEDROCK:-}" in ""|0|false) ;; *) bedrock=yes ;; esac
+printf '%s' "$in" | jq -e '.model.id // "" | test("(^|[.:/])anthropic\\.|arn:aws:bedrock")' >/dev/null 2>&1 && bedrock=yes
+if [ "$bedrock" = yes ]; then
+  b="$u/bedrock"; mkdir -p "$b"
+  sid=$(printf '%s' "$in" | jq -r '.session_id // empty' | tr -cd 'A-Za-z0-9-')
+  if [ -n "$sid" ]; then
+    prev=$(cat "$b/$sid.json" 2>/dev/null); [ -n "$prev" ] || prev={}
+    printf '%s' "$in" | jq -c --argjson prev "$prev" --arg day "$(date +%F)" '
+      (.cost.total_cost_usd // 0) as $total
+      | ($prev.days // {}) as $d
+      | ([$d | to_entries[] | select(.key != $day) | .value] | add // 0) as $other
+      | {days: ($d + {($day): ([$total - $other, 0] | max)}),
+         project: ((.workspace.current_dir // .cwd // "") | sub("/+$"; "") | split("/") | last),
+         at: (now | floor)}' > "$b/$sid.json.tmp" 2>/dev/null && mv "$b/$sid.json.tmp" "$b/$sid.json" || rm -f "$b/$sid.json.tmp"
+  fi
+  find "$b" -name '*.json' -mtime +30 -exec rm -f {} + 2>/dev/null
+  printf '{"at":%s,"bedrock":true}\n' "$(date +%s)" > "$u/claude.json"
+fi
 printf '%s' "$in" | jq -ce 'select(.rate_limits != null) | {at: (now | floor), five_hour: .rate_limits.five_hour, seven_day: .rate_limits.seven_day}' \
   > "$u/claude.json.tmp" 2>/dev/null && mv "$u/claude.json.tmp" "$u/claude.json" || rm -f "$u/claude.json.tmp"
 printf '%s' "$in" | jq -r --argjson cache "$cache" '

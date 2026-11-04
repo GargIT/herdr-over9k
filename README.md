@@ -77,7 +77,10 @@ with the plan's name, the percentage used in green, yellow from 50% or red from
 reports, as bars. In the layout it sits above the sidebar's footer; on its
 own, it's a single line along the bottom of the window. Claude's numbers come
 from its status line, which Over9k can set up for you, and Codex's from its
-latest session. Hide any you don't use in Options.
+latest session. Claude on Amazon Bedrock has no plan limits, since it's paid per
+use, so its row shows what you've spent today instead, and opens to each
+session's cost (Claude Code's estimate, not your AWS bill). Hide any you don't
+use in Options.
 
 Gemini's come from Antigravity's status line, which you set up by hand: add this
 to `~/.gemini/antigravity-cli/settings.json`, with `<mods>` replaced by your

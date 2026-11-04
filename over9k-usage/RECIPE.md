@@ -17,6 +17,10 @@ yellow or red, with when it resets. Hover a service to see every limit.
   - the time until it resets, in 11px `dim`
 - **"Claude · Show its limits"**, a link in `accent` at the end of the strip.
   It shows when Claude Code is installed but the status line isn't Over9k's.
+- **Claude on Amazon Bedrock** has no plan limits (it's paid per use), so its
+  row shows a "Bedrock" badge and today's spend, such as "today $14.20". Hover
+  or open it for each session's cost by project. This is Claude Code's own
+  estimate, not the AWS bill.
 - **Inside the Over9k layout**, the same data is drawn as 28px rows above the
   sidebar's footer. Clicking a row opens every limit as a 3px bar.
 
@@ -29,7 +33,11 @@ yellow or red, with when it resets. Hover a service to see every limit.
   turned off. Claude's numbers appear after the next reply.
 - **Where the data comes from:**
   - **Claude:** `~/.cache/over9k/usage/claude.json`, written by the status
-    line, plus the plan name from `~/.claude.json`.
+    line, plus the plan name from `~/.claude.json`. On Bedrock
+    (`CLAUDE_CODE_USE_BEDROCK`, or a Bedrock model id), the status line marks it
+    `{"bedrock": true}` and keeps each session's cost per day in
+    `usage/bedrock/<session>.json` as `{days: {"2026-11-04": 2.5}, project}`. That
+    is Claude Code's running `cost.total_cost_usd`, split at midnight.
   - **Codex:** its latest session file under `~/.codex/sessions`.
   - **Gemini:** `~/.cache/over9k/usage/antigravity.json`, from Antigravity's
     status line (`agy-statusline.sh` in the Over9k layout, set up by hand).
