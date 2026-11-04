@@ -46,6 +46,7 @@ a 10px radius.
   `{"place": "right", "size": 368}`:
   - `main.js`: the panel.
   - `prompts.py`: the reader.
+  - `claude-info.py`: which conversation runs in which terminal.
   - `timeline.svg`.
 - **`prompts.py <file|folder> [last]`** prints `{prompts, context, size, path}`,
   oldest first:
@@ -55,8 +56,9 @@ a 10px radius.
   - **last** ("path\tsize"): when that's unchanged, it prints `{"same": true}`.
   - **tokens:** each message's `output_tokens`, counted once (the largest).
   - **Turns:** a queued mid-turn message stays in its turn.
-- **Finding the conversation:** `~/.cache/claude-agents/<terminal>.json`
-  (`transcript`), if the user's own status line writes one.
+- **Finding the conversation:** `~/.cache/over9k/agents/<terminal>.json`
+  (`transcript`), kept by the Over9k sidebar. On its own, the mod runs its copy
+  of `claude-info.py`, which finds it from `~/.claude/sessions/<pid>.json`.
   Otherwise Claude Code's folder for the agent's working directory,
   `~/.claude/projects/<cwd with non-alphanumerics as ->`.
 - **herdr:** `focused`, `agents`, `panes`, `readTextFile`, `exec` (Python), `hc
@@ -65,8 +67,8 @@ a 10px radius.
 ## Watch out
 
 - Claude Code agents only.
-- Without that file, two conversations in the same folder resolve to the newer
-  one. Never install a status line for it.
+- Where the terminal can't be matched (Windows), two conversations in the same
+  folder resolve to the newer one. Never use Claude Code's status line for it.
 - Python is found as `python3`, else `python`.
 - Don't use `stat` to check whether the file grew: its flags differ between
   Linux and macOS. The reader checks the size itself.

@@ -45,7 +45,7 @@ const PAGES = [["folders", "Folders"], ["spaces", "Space rows"], ["agents", "Age
 // The usage section above Settings (over9k-usage): whether it shows, and which services.
 const USAGE_ITEMS = [
   ["usage", "Show usage", "Limits per service, above Settings"],
-  ["usageClaude", "Claude", "From what your own status line saves (README: Claude Code data)"],
+  ["usageClaude", "Claude", "Shown when its limits are saved for Over9k (README: Claude Code data)"],
   ["usageCodex", "Codex", "From Codex's latest session"],
   ["usageGemini", "Gemini", "From Antigravity's status line, with the 3rd-party (Claude, GPT) limits"],
 ];

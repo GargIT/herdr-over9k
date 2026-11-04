@@ -7,8 +7,9 @@
 // only gets a message's tokens once it's finished), the files it changed and
 // the commands it ran, and the start of its reply. Click one, or ↑/↓ then Enter,
 // to read the whole prompt and the reply (Markdown) here; Esc closes it.
-// Claude Code agents only: if the user's own status line writes
-// ~/.cache/claude-agents/<terminal>.json, its transcript path is used; prompts.py reads it.
+// Claude Code agents only: claude-info.py (Over9k's sidebar runs it; on its own, this
+// mod's copy) says which conversation runs in each terminal, from Claude Code's own
+// session files (~/.cache/over9k/agents/<terminal>.json); prompts.py reads it.
 // Followed: the agent you're in, else the last one you were in.
 
 import { View, div, svg } from "gpui-kit";
@@ -78,9 +79,15 @@ export default class Prompts extends View {
     this.busy = true;
     cx.spawn(async (cx) => {
       try {
-        const info = await readTextFile(`${home()}/.cache/claude-agents/${this.agent}.json`).catch(() => null);
+        let info = await readTextFile(`${home()}/.cache/over9k/agents/${this.agent}.json`).catch(() => null);
+        // On its own (no sidebar keeps those files): run claude-info.py here.
+        if (!info) {
+          const own = `${appHome()}/mods/over9k-prompts/claude-info.py`;
+          const r = await python(["-I", (await readTextFile(own).catch(() => null)) != null ? own : `${appHome()}/mods/over9k/claude-info.py`]).catch(() => null);
+          try { info = JSON.stringify(JSON.parse(r?.stdout || "{}")[this.agent] ?? null); } catch {}
+        }
         let path = null;
-        try { path = info && JSON.parse(info).transcript; } catch {}
+        try { path = info && JSON.parse(info)?.transcript; } catch {}
         // Without that file: Claude Code's folder for the agent's
         // working directory (the reader takes its newest conversation).
         const a = agents().find((x) => x.address === this.agent);

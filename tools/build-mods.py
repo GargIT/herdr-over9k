@@ -39,6 +39,7 @@ SHARES = {
     "over9k-timeline": {
         "mods": ["over9k-prompts"],
         "place": {"over9k-prompts": {"place": "right", "size": 368}},
+        "extra": {"over9k-prompts": [("over9k", "claude-info.py")]},
     },
     "over9k-usage": {
         "mods": ["over9k-usage"],

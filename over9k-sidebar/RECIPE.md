@@ -120,10 +120,12 @@ All colours are theme names.
 
 - On macOS, merge `keys.macos.json` instead (Cmd where macOS expects it); Ctrl+Tab stays, since macOS keeps Cmd+Tab for switching apps.
 
-- **Agent details:** model, effort, context and cache come from
-  `~/.cache/claude-agents/<terminal>.json`, if the user's own Claude Code status
-  line writes it (see Claude Code data in the repo's README). Over9k installs no status line. Without
-  it, agent rows show only the name and status.
+- **Agent details:** model, effort, context and cache come from Claude Code's
+  own files, never its status line. `claude-info.py` matches
+  `~/.claude/sessions/<pid>.json` to the Herdr terminal (the process's
+  `HC_TERMINAL_ID`: `/proc` on Linux, `ps -wwE` on macOS; none on Windows),
+  reads the end of the conversation and writes
+  `~/.cache/over9k/agents/<terminal>.json`.
 - **Linux-only extras:** Codex session detection, Antigravity subagents and the
   "SSH'd from here" links read `/proc`.
 - **Windows:** needs Git for Windows' `sh`.

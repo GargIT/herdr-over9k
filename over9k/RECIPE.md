@@ -193,11 +193,17 @@ Left to right. All colours are theme names (`canvas`, `chrome`, `background`,
 - Mods can't import from each other. That's why `agent-name.js` and
   `close-plan.js` are copied into each mod that uses them, and each copy must
   stay the same.
-- Over9k never installs or changes Claude Code's status line. Agent details,
-  Claude's usage row and the Timeline's exact conversation read
-  `~/.cache/claude-agents/<terminal>.json` and `~/.cache/over9k/usage/claude.json`
-  if the user's own status line writes them (see Claude Code data in the repo's README). Without them,
-  agent rows show name and status only.
+- Over9k never installs or changes Claude Code's status line. Agent details
+  come from Claude Code's own files: `over9k/claude-info.py` matches each
+  `~/.claude/sessions/<pid>.json` to its Herdr terminal (the process's
+  `HC_TERMINAL_ID`, via `/proc` on Linux or `ps -wwE` on macOS), reads the end
+  of its conversation (model, effort from the last API request, context from
+  the last reply's input tokens, cache expiry from its cache write) and writes
+  `~/.cache/over9k/agents/<terminal>.json`. The sidebar runs it every 5s, on
+  each computer with a Claude Code agent.
+- Claude's plan limits are never in a file: the Claude usage row shows only if
+  `~/.cache/over9k/usage/claude.json` exists (see Claude Code data in the
+  repo's README).
 - A variable-height `list` ignores `track_scroll`. Only `v_virtual_list` can be
   scrolled from code.
 - Hover style can linger in screenshots taken right after a reload.
@@ -221,8 +227,8 @@ Left to right. All colours are theme names (`canvas`, `chrome`, `background`,
 - `herdr-app status` shows no errors, and `herdr-app check` passes for all 15
   `mods/over9k*` folders.
 - With a Claude Code agent running in a project, its row shows a spinner while
-  it works. If its status line saves the data, its details show the model and
-  context %.
+  it works. Its details show the model, effort and context %, the same as
+  Claude Code's own `/context`.
 - Opening Timeline shows that agent's prompts newest first. The working turn's
   time and ↓ tokens match the CLI's spinner line.
 - `todo add "x"` in a project shows "x" in the To-do panel within a second.

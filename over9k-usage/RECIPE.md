@@ -27,9 +27,10 @@ yellow or red, with when it resets. Hover a service to see every limit.
 - **Hover:** a service shows every limit and its reset time.
 - **Where the data comes from:**
   - **Claude:** `~/.cache/over9k/usage/claude.json`, `{at, five_hour,
-    seven_day}` copied from the status line input's `rate_limits`, plus the plan
-    name from `~/.claude.json`. This mod installs no status line: the user's own
-    writes the file, if they want the row. On Bedrock it holds
+    seven_day}`, plus the plan name from `~/.claude.json`. Claude Code keeps its
+    limits in memory and only hands them to a status line, so this file exists
+    only if something the user set up saves it. This mod never touches the
+    status line. On Bedrock it holds
     `{at, "bedrock": true}`, and each session's cost per day is in
     `usage/bedrock/<session>.json` as `{days: {"2026-11-04": 2.5}, project}`,
     from the input's `cost.total_cost_usd`.
@@ -52,9 +53,8 @@ yellow or red, with when it resets. Hover a service to see every limit.
 ## Watch out
 
 - The strip has no room to open rows, so it lists limits on hover instead.
-- Claude's limits exist only in Claude Code's status line input, so without a
-  status line that saves them there's no Claude row. Never install or replace
-  the user's status line.
+- Without `usage/claude.json` there's no Claude row. Never install or replace
+  the user's status line to get one.
 
 ## Done when
 

@@ -91,7 +91,7 @@ case "$app" in
   pi) agent=pi
       model=$(hc read "$from" --lines 8 2>/dev/null | grep -oE '[^ ]+ • [^ ]+[[:space:]]*$' | tail -n 1 | cut -d ' ' -f 1) ;;
   *) agent=claude
-     id=$(jq -r '.id // empty' "$HOME/.cache/claude-agents/$from.json" 2>/dev/null)
+     id=$(jq -r '.id // empty' "$HOME/.cache/over9k/agents/$from.json" 2>/dev/null)
      case "$id" in claude-*|"") ;; *) model=$id ;; esac ;;
 esac
 [ -n "$brief" ] || brief="This was handed off from a chat. Ask me what we're working on."

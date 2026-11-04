@@ -2,8 +2,8 @@
 # Antigravity CLI (agy) custom status line (settings.json statusLine, stacked
 # under the default one): usage limits per model group. Optional: see README
 # (Antigravity) for how to set it up. Needs jq. Inside Herdr it saves model,
-# effort and context for this terminal in the same file Claude Code's status
-# line writes (~/.cache/claude-agents/<HC_TERMINAL_ID>.json), which Over9k's
+# effort and context for this terminal in the
+# files Over9k keeps (~/.cache/over9k/agents/<HC_TERMINAL_ID>.json), which Over9k's
 # Spaces list shows after the agent's name. lastAt (for "3m") moves when the
 # output token count does.
 in=$(cat)
@@ -35,7 +35,7 @@ u="$HOME/.cache/over9k/usage"; mkdir -p "$u"
 printf '%s' "$in" | jq -ce 'select(.quota != null) | {at: (now | floor), plan: .plan_tier, quota}' \
   > "$u/antigravity.json.tmp" 2>/dev/null && mv "$u/antigravity.json.tmp" "$u/antigravity.json" || rm -f "$u/antigravity.json.tmp"
 [ -n "$HC_TERMINAL_ID" ] || exit 0
-dir="$HOME/.cache/claude-agents"; mkdir -p "$dir"
+dir="$HOME/.cache/over9k/agents"; mkdir -p "$dir"
 f="$dir/$HC_TERMINAL_ID.json"
 prev=$(cat "$f" 2>/dev/null); [ -n "$prev" ] || prev={}
 printf '%s' "$in" | jq -c --argjson prev "$prev" --arg title "$title" '

@@ -132,7 +132,7 @@ sees it. The layout already includes all six, so install one or the other, not
 both.
 
 **What it needs.** Herdr 0.1.12 or newer. git, jq and Python 3 power the git
-badges, the to-do hook and the Timeline; without one, Over9k leaves
+badges, Claude Code agents' details, the to-do hook and the Timeline; without one, Over9k leaves
 out what needs it, and the installer says what's missing. Claude Code gets the
 most out of it; Codex, Pi and Antigravity agents are listed too. Over9k is
 developed on Linux. On macOS, install the tools with `brew install jq python
@@ -141,7 +141,8 @@ git`. On Windows, it runs its scripts with [Git for Windows](https://git-scm.com
 add Git's tools to your PATH with `-AddGitToPath`). The macOS and Windows paths
 haven't been run there yet, so please report what doesn't work. Two extras read
 Linux's `/proc` and stay off elsewhere: finding Codex sessions, and listing
-Antigravity's subagents.
+Antigravity's subagents. Claude Code agents' details find their terminal
+through `/proc` on Linux and `ps` on macOS, and are left out on Windows.
 
 ## Shortcuts
 
@@ -160,25 +161,21 @@ switcher. The installers pick the right key file for your OS (`keys.json`, or
 
 ## Claude Code data
 
-Claude Code tells only its status line a few things Over9k would like to show:
-an agent's model, effort and context, its conversation file, and your plan's
-limits. Over9k doesn't install a status line; your own can save them for it,
-and Over9k shows them when it finds them:
+Over9k never touches Claude Code's status line. It reads Claude Code's own
+files instead:
 
-- **`~/.cache/claude-agents/$HC_TERMINAL_ID.json`**, per Herdr terminal:
-  `{"model", "effort", "context", "cacheUntil", "lastAt", "transcript"}`
-  (`context` is the used %, `cacheUntil` and `lastAt` are Unix seconds, and
-  `transcript` is the input's `transcript_path`). The sidebar's agent details,
-  the expired-cache restart and the Timeline use it.
-- **`~/.cache/over9k/usage/claude.json`**: `{"at", "five_hour", "seven_day"}`,
-  copied from the input's `rate_limits`, for the usage rows. On Bedrock, write
-  `{"at", "bedrock": true}` instead, and each session's cost per day to
-  `~/.cache/over9k/usage/bedrock/<session_id>.json` as
-  `{"days": {"2026-11-04": 2.5}, "project": "api"}`, from the input's
-  `cost.total_cost_usd`.
-
-Without them, agents still show with their status, the Timeline finds the
-newest conversation in the agent's folder, and there's no Claude usage row.
+- **Agent details.** `~/.claude/sessions/<pid>.json` says which conversation
+  each running Claude Code is in, and its process says which Herdr terminal it's
+  in. The conversation file in `~/.claude/projects` then gives the model, effort,
+  how full the context is, when the prompt cache runs out and when it last
+  replied. Over9k keeps what it found in `~/.cache/over9k/agents`.
+- **Plan limits** are the exception: Claude Code keeps them in memory and only
+  ever hands them to a status line, never to a file. So the Claude usage row
+  appears only if something else saves them to `~/.cache/over9k/usage/claude.json`
+  as `{"at", "five_hour", "seven_day"}` (a status line's `rate_limits`). On
+  Bedrock, that's `{"at", "bedrock": true}`, with each session's cost per day
+  in `~/.cache/over9k/usage/bedrock/<session_id>.json` as
+  `{"days": {"2026-11-04": 2.5}, "project": "api"}`.
 
 ## What the installer changes
 

@@ -317,10 +317,11 @@ export default class Spaces extends View {
     const autoOn = Object.fromEntries(Object.entries(this.remote).map(([m, f]) => [m, f.dirs ?? []]));
     if (JSON.stringify(autoOn) !== JSON.stringify(shared("projects.autoOn") ?? {})) setShared("projects.autoOn", autoOn);
     this.closedOpenOn = JSON.parse(localStorage.getItem("projects.closedOpenOn") ?? "{}");
-    // Model, effort and context per agent: one file per Herdr terminal here, if the
-    // user's own Claude Code status line writes it (Over9k installs none: README).
+    // Model, effort and context per agent, one file per Herdr terminal here:
+    // claude-info.py writes Claude Code's (from its own session and conversation
+    // files; no status line), Antigravity's status line its own (optional).
     this.info = {};
-    this.infoDir = `${homeDir()}/.cache/claude-agents`;
+    this.infoDir = `${homeDir()}/.cache/over9k/agents`;
     // Pi's info, from its footer on screen; models other than an agent's own
     // (Pi's model list: name and server), and the effort each local server runs at.
     this.piInfo = {};
@@ -637,15 +638,27 @@ export default class Spaces extends View {
         const listed = agents();
         // (A terminal says what it runs by its program: "agent" isn't there.)
         const kids = terminals().filter((k) => (k.program?.agent || isAgentProgram(k.agent)) && k.state === "live" && !listed.some((a) => a.address === k.address));
+        // Claude Code's, on each computer that runs one: claude-info.py there.
+        this.ciScript ??= await readTextFile(`${appHome()}/mods/over9k/claude-info.py`).catch(() => null);
+        const ci = {};
         for (const a of [...listed, ...kids]) {
-          // Another computer's ("laptop/t3"): its status line writes the file there.
+          if (!this.ciScript || !isClaude(a)) continue;
+          const [m] = a.address.includes("/") ? a.address.split("/") : [null];
+          const key = m ?? "";
+          if (key in ci || (m && !this.machines.some((x) => x.name === m && x.state === "connected"))) continue;
+          const r = await (m ? exec("python3", ["-c", this.ciScript], { on: m }) : python(["-c", this.ciScript])).catch(() => null);
+          try { ci[key] = JSON.parse(r?.stdout || "{}"); } catch { ci[key] = {}; }
+        }
+        for (const a of [...listed, ...kids]) {
           const [m, t] = a.address.includes("/") ? a.address.split("/") : [null, a.address];
           if (m && !(this.remote[m]?.home && this.machines.some((x) => x.name === m && x.state === "connected"))) continue;
           try {
-            const text = m ? await readTextFile(`${this.remote[m].home}/.cache/claude-agents/${t}.json`, { on: m })
+            const found = ci[m ?? ""]?.[t];
+            // Others (Antigravity): the file its status line writes, there.
+            const text = found ? null : m ? await readTextFile(`${this.remote[m].home}/.cache/over9k/agents/${t}.json`, { on: m })
               : await readTextFile(`${this.infoDir}/${a.address}.json`);
-            if (text) {
-              const i = JSON.parse(text);
+            if (found || text) {
+              const i = found ?? JSON.parse(text);
               // Past the prompt cache's expiry (cacheUntil, seconds): the next message re-reads everything.
               i.cold = i.cacheUntil != null && Date.now() / 1000 > i.cacheUntil;
               info[a.address] = i;
@@ -939,9 +952,8 @@ export default class Spaces extends View {
       }
       await hc(["send", terminal, "/clear"]).catch(() => null);
       if (!transcript) return;
-      // A prompt sent before /clear finishes is lost: wait until the status line
-      // reports the new conversation's transcript (up to 35s, past its 30s
-      // refresh), then a moment more.
+      // A prompt sent before /clear finishes is lost: wait until claude-info.py
+      // reports the new conversation's transcript (up to 35s), then a moment more.
       let fresh = null;
       for (let n = 0; n < 70; n++) {
         await cx.sleep(500);
