@@ -140,13 +140,6 @@ export default class SidebarOptions extends View {
     const group = (title, about, first) => v_flex().flex_none().pt(first ? 0 : 24).pb(10).gap(3)
       .child(div().text_size(16).font_semibold().text_color(t.foreground).child(title))
       .when(Boolean(about), (el) => el.child(div().text_size(12).text_color(t.dim).child(about ?? "")));
-    // A note that some of a page's details need an agent's footer, with a link to
-    // the Session footers page (and from there back to the pages they fill).
-    const goTo = (id, page, label) => h_flex().id(id).flex_none().gap(3).items_center().cursor_pointer().text_color(t.accent)
-      .hover((s) => s.text_color(t.foreground)).on_click((_e, cx) => { this.page = page; cx.notify(); })
-      .child(label).child(svg("mods/workspace-chrome/chevron-right.svg").size(10));
-    const needs = (id, text, page = "claude", label = "Session footers") => h_flex().flex_none().flex_wrap().pt(10).gap_x(6).gap_y(2).items_center()
-      .text_size(11.5).text_color(t.dim).child(text).child(goTo(`link-${id}`, page, label));
     const choice = (id, text, on) => h_flex().id(id).flex_1().h(30).items_center().justify_center().rounded(7).cursor_pointer()
       .border_1().border_color(on ? t.accent : t.input).bg(on ? t.accent + "26" : t.raised).text_color(on ? t.foreground : t.muted)
       .hover((s) => s.text_color(t.foreground)).on_click(() => this.set("layout", id)).child(text);
@@ -259,6 +252,13 @@ export default class SidebarOptions extends View {
 
   // Space rows, Agent rows or Subagent rows: heading, sample, then what it shows.
   viewPage(t, o, group, check, choice) {
+    // A note that some of a page's details need an agent's footer, with a link to
+    // the Session footers page (and from there back to the pages they fill).
+    const goTo = (id, page, label) => h_flex().id(id).flex_none().gap(3).items_center().cursor_pointer().text_color(t.accent)
+      .hover((s) => s.text_color(t.foreground)).on_click((_e, cx) => { this.page = page; cx.notify(); })
+      .child(label).child(svg("mods/workspace-chrome/chevron-right.svg").size(10));
+    const needs = (id, text, page = "claude", label = "Session footers") => h_flex().flex_none().flex_wrap().pt(10).gap_x(6).gap_y(2).items_center()
+      .text_size(11.5).text_color(t.dim).child(text).child(goTo(`link-${id}`, page, label));
     const page = v_flex().flex_none();
     if (this.page === "spaces") return page
       .child(group("Space rows", "Shown next to the name. All clickable.", true))
