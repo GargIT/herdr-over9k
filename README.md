@@ -5,7 +5,7 @@ agents at once. It adds a sidebar that lists your projects and the agents in
 them, a to-do list per project that you and your agents share, a timeline of
 each conversation, and your plans' usage limits, all in one layout.
 
-![The Over9k layout](layouts/over9k.svg)
+![Over9k](preview.png)
 
 ## What you get
 
@@ -149,9 +149,19 @@ its Claude Code pieces, restoring your own status line. Your to-do lists stay in
 
 ## Privacy
 
-Everything stays on your computer. Over9k reads your agents' conversation files,
-your git repos and Herdr's own state locally, and sends nothing anywhere. Other
-computers you've added to Herdr are reached through Herdr itself.
+Over9k has no server of its own and collects nothing. It reads your agents'
+conversation files, your git repos and Herdr's state on your computer. It
+reaches the network in three ways, all through your own tools:
+
+- **git:** every 5 minutes it fetches each project that has a GitHub remote,
+  to show how far ahead or behind it is. Push and pull happen only when you
+  click them.
+- **GitHub (`gh`), if installed:** in the same 5-minute pass it counts each
+  repo's open pull requests and checks whether your review is wanted.
+- **Local model servers:** the + menu checks whether the servers in Pi's
+  `models.json` are up, at the addresses listed there.
+
+Other computers you've added to Herdr are reached through Herdr itself.
 
 ## In this repo
 

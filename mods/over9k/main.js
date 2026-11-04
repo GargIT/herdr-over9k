@@ -3,7 +3,7 @@
 // grouped by machine when more than one is known. After a space's name, the repo
 // its first terminal is in now, only where unusual: branch, ahead/behind. Agent state lives in the agents list, not here. Click to
 // switch, right-click for its menu, drag to reorder.
-// Personal clone. Projects are git repos in ~/Code and folders with a CLAUDE.md,
+// Projects are git repos in the projects folder (Options › Folders) and folders with a CLAUDE.md,
 // AGENTS.md or .claude folder, plus ones pinned from the right-click menu, less hidden ones; with no open space they stay listed in a folded "Not open" section.
 // Every terminal and agent lists under the project or space its live folder is
 // in (any other folder gets a row of its own; ~ itself is the home space), so

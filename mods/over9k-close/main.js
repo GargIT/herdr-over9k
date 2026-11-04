@@ -1,4 +1,4 @@
-// Personal clone of confirm: asks before closing spaces, tabs and terminals,
+// Over9k's clone of the shipped confirm: asks before closing spaces, tabs and terminals,
 // and says what ends ("2 terminals, 1 agent"), not how many tabs. Opened as a
 // dialog with props { spaces?, tabs?, panes? } (ids); close-plan.js works out
 // the commands. Enter confirms, Esc cancels.

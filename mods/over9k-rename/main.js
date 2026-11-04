@@ -1,4 +1,4 @@
-// Personal clone of prompt: names a space in the Spaces list that isn't open (props { folder, value }); saved in shared projects.names, which
+// Over9k's clone of the shipped prompt: names a space in the Spaces list that isn't open (props { folder, value }); saved in shared projects.names, which
 // over9k shows and names its space with when it opens. An empty name
 // goes back to the folder's. With { terminal, tab } it names a pane instead:
 // an agent's session by the agent's own command (/rename, Pi's /name), a plain

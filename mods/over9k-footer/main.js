@@ -1,6 +1,6 @@
 import { View, div, image, svg } from "gpui-kit";
 import { h_flex, v_flex } from "gpui-base";
-// Personal clone of workspace-chrome: the footer also has Over9k help & options.
+// Over9k's clone of the shipped workspace-chrome: the footer also has Over9k help & options.
 import { theme, run, props, window, shared, setShared, updates, layout, openOverlay } from "herdr";
 
 function find(node, id) {
