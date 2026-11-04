@@ -1,7 +1,7 @@
 # Over9k Timeline
 
-See what every prompt took. The Timeline lists the conversation you're in, newest
-first: how long the agent worked on each prompt, when it finished, the tokens it
+See exactly what happened, prompt by prompt. The Timeline lists the conversation
+you're in, newest first: how long the agent worked on each prompt, when it finished, the tokens it
 wrote, the files it changed and the commands it ran. While it works, the time and
 tokens tick live and match the CLI exactly, and the header shows how full its
 context is.

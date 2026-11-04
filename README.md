@@ -6,41 +6,54 @@ over 9000.
 
 ![Over9k](over9k/preview.png)
 
-### See what every agent is doing
+### [Sidebar](over9k-sidebar): see every agent
 
-One sidebar holds every project and every agent working in it. Point it at your
-code folder and each repo shows up on its own, with its branch, uncommitted
-files, pull requests and push/pull; pin the projects you care about and park the
-rest. Under each project, every agent shows whether it's working or needs you,
-which model it's on, how full its context is, and how long since it last
-replied. Under each agent sit the subagents, background commands and scheduled
-prompts it started. Links show where the work is going: an agent working in
-another space, or over SSH on another computer, is marked at both ends.
+Every project and every agent working in it, in one list. Point it at your code
+folder and each repo shows up on its own, with its branch, uncommitted files,
+pull requests and push/pull; pin the projects you care about and park the rest.
+Every agent shows whether it's working or needs you, its model, how full its
+context is and how long since it replied, with the subagents, background
+commands and scheduled prompts it started underneath. Links show where the work
+is going, into another space or over SSH to another computer. When an agent's
+prompt cache has expired, one click clears it and restarts it from a short
+recap, instead of paying to re-read the whole chat. And a chat you started
+anywhere can hand off to a new agent in the right project, so it becomes
+project work.
 
-### Keep the work moving
+### [Launcher](over9k-launcher): start, resume, run local
 
-Your agents keep a to-do list for each project. They add what you ask for as you
-ask it and tick it off when it's done, in step with the project's own TODO.md,
-and any to-do goes to the current conversation or a new agent in one click. A
-chat you started anywhere can hand off to a new agent in the right project, with
-a brief, so it becomes project work. Ctrl+Tab jumps between agents, most recent
-first, and past Claude Code, Codex and Pi sessions resume from one menu.
+Ctrl+Shift+A, or the sidebar's +, opens one menu for starting work: a CLI or any
+installed agent in the space you're in, a new git worktree, or a past Claude
+Code, Codex or Pi session to pick up where you left off. Pi can run on a local
+model like Qwen: pick it and its server starts for you, then stop the server
+from the same menu when you're done.
 
-### Spend fewer tokens
+### [To-do](over9k-todo): agentic to-dos
 
-When an agent's prompt cache has expired, its next message would re-read the
-whole chat. One click clears it instead and restarts it from a short recap. The
-Timeline shows what every prompt took, in time and tokens, live while the agent
-works. Your Claude, Codex and Gemini limits stay in view, and Pi starts on a
-local model like Qwen in a click, with its server started and stopped for you.
+A to-do list per project that your agents keep for you. They add what you ask
+for as you ask it and tick it off when it's done, in step with the project's own
+TODO.md. Any to-do goes to the current conversation or a new agent in one click,
+alone or several at once.
 
-### Make it yours
+### [Timeline](over9k-timeline): what happened, prompt by prompt
 
-Over9k help & options, at the bottom of the sidebar, decides what every row
-shows, which panels appear and what's set up for your agents, and its
-illustrated Help walks through each part. Right-click menus open folders, hand
-off work, split, zoom and close. Use the whole layout, or add only the parts you
-want to your own.
+The conversation you're in, newest first: each prompt, how long the agent worked
+on it, when it finished, the files it changed, the commands it ran and what it
+replied, with the tokens it wrote. While the agent works, the time and tokens
+tick live, matching the CLI, and the header shows how full its context is.
+
+### [Usage](over9k-usage) and [Switcher](over9k-switcher)
+
+Your Claude, Codex and Gemini limits stay in view, coloured green, yellow or red,
+with when each resets. And Ctrl+Tab jumps between agents the way you switch
+apps, most recent first, across every space and computer.
+
+### All together
+
+The Over9k layout puts all six in one window, with To-do and Timeline added to
+Herdr's own tab bar. Over9k help & options, at the bottom of the sidebar,
+decides what every row shows, which panels appear and what's set up for your
+agents, and its illustrated Help walks through each part.
 
 ## Get started
 
@@ -56,20 +69,12 @@ Then open Herdr and pick **Settings › Layout › Over9k** (or, if it's running
 walks you through picking your projects folder. To update, run the installer
 again from a newer copy; your settings and lists stay.
 
-**Just the parts you want.** Each piece also works on its own in your own
-layout. It docks itself the first time Herdr sees it, and installs with
-`sh install.sh <name>` (on Windows, `install.ps1 -Mod <name>`):
-
-| Mod | What it is |
-|---|---|
-| [`over9k-sidebar`](over9k-sidebar) | Projects and agents, with git, links, recaps, hand-offs and its own Help & Options (left) |
-| [`over9k-todo`](over9k-todo) | Agentic to-do lists and the `todo` command (right) |
-| [`over9k-timeline`](over9k-timeline) | Every prompt's time and tokens (right) |
-| [`over9k-usage`](over9k-usage) | Claude, Codex and Gemini limits in one line (bottom) |
-| [`over9k-launcher`](over9k-launcher) | Start agents, resume sessions, local models (Ctrl+Shift+A) |
-| [`over9k-switcher`](over9k-switcher) | Ctrl+Tab between agents |
-
-The layout already includes all six, so install one or the other, not both.
+**Just the parts you want.** Each mod above also works on its own in your own
+layout: `sh install.sh over9k-todo` (on Windows, `install.ps1 -Mod over9k-todo`),
+and likewise `over9k-sidebar`, `over9k-launcher`, `over9k-timeline`,
+`over9k-usage` and `over9k-switcher`. A mod docks itself the first time Herdr
+sees it. The layout already includes all six, so install one or the other, not
+both.
 
 **What it needs.** Herdr 0.1.12 or newer. git, jq and Python 3 power the git
 badges, Claude Code's status line and the Timeline; without one, Over9k leaves
