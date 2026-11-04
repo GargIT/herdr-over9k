@@ -60,14 +60,14 @@ printf '%s' "$in" | jq -r --argjson cache "$cache" '
     | "\u001b[\($c)m\(round)%\u001b[0m";
   def tokens: if . >= 1000000 then "\(. / 100000 | round / 10)M" | sub("\\.0M$"; "M")
     elif . >= 1000 then "\(. / 1000 | round)k" else "\(.)" end;
-  def show($name): "\($name) \(.used_percentage | pct) · resets in \(.resets_at | left)";
   def dim: "\u001b[2m\(.)\u001b[0m";
+  # A limit: its label, the used % coloured, and the time to reset dimmed.
+  def show($name): "\($name) \(.used_percentage | pct) " + ("· \(.resets_at | left)" | dim);
   [ ([.model.display_name, .effort.level] | map(select(. != null)) | join(" · ") | select(. != "")),
     (.context_window | select(.used_percentage != null)
       | "context \(.used_percentage | pct) "
         + ("(\((.current_usage | (.input_tokens // 0) + (.cache_creation_input_tokens // 0) + (.cache_read_input_tokens // 0)) | tokens)/\(.context_window_size | tokens))" | dim)),
-    ($cache | select(. != null and . > now) | "cache \(left)" | dim),
+    ($cache | select(. != null) | if . > now then "cache " + ("\(left)" | dim) else "cache \u001b[31mexp.\u001b[0m" end),
     (.rate_limits.five_hour // empty | show("5h")),
-    (.rate_limits.seven_day // empty | show("usage")),
-    ($cache | select(. != null and . <= now) | "\u001b[31mexp.\u001b[0m") ]
+    (.rate_limits.seven_day // empty | show("week")) ]
   | join("   ")'
