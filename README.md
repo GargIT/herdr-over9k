@@ -1,19 +1,16 @@
 # Over9k for Herdr
 
 **Run a fleet of coding agents and actually know what they're doing.** Over9k is
-a layout for [Herdr](https://herdr.dev), made for keeping several agents busy
-across many projects without losing track. It puts every project and every agent
-in one place: what each one is working on, whether it needs you, how full its
-context is, what it started and where its work is going, and, in the Timeline,
-what happened prompt by prompt. Your agents keep your to-do lists for you. A
-chat turns into a project when the work calls for it. A conversation whose cache
-has expired restarts for a fraction of the tokens. And starting an agent,
-resuming one, or running it on a local model is a single menu away. Use the
-whole layout, or add just the parts you want to your own.
+a layout for [Herdr](https://herdr.dev) that brings every project and every agent
+into one view, so you can see what's going on, step in where you're needed, and
+keep the work moving without losing track. Use the whole layout, or add just the
+parts you want to your own.
 
 ![Over9k](over9k/preview.png)
 
 ### [Sidebar](over9k-sidebar): see every agent
+
+![Over9k Sidebar](over9k-sidebar/preview.png)
 
 Every project and every agent working in it, in one list. Point it at your code
 folder and each repo shows up on its own, with its branch, uncommitted files,
@@ -29,6 +26,8 @@ project work (turn that on in Options › Folders).
 
 ### [Launcher](over9k-launcher): start, resume, run local
 
+![Over9k Launcher](over9k-launcher/preview.png)
+
 Ctrl+Shift+A, or the sidebar's +, opens one menu for starting work: a CLI or any
 installed agent in the space you're in, a new git worktree, or a past Claude
 Code, Codex or Pi session to pick up where you left off. Pi can run on a local
@@ -38,6 +37,8 @@ from the same menu when you're done. The models come from Pi's own list
 start and stop each one's server.
 
 ### [To-do](over9k-todo): agentic to-dos
+
+![Over9k To-do](over9k-todo/preview.png)
 
 A to-do list for every project, kept by you and your agents together. Agents get
 a `todo` command and a short rule (in CLAUDE.md for Claude Code, AGENTS.md for
@@ -56,12 +57,16 @@ when they were finished.
 
 ### [Timeline](over9k-timeline): what happened, prompt by prompt
 
+![Over9k Timeline](over9k-timeline/preview.png)
+
 The conversation you're in, newest first: each prompt, how long the agent worked
 on it, when it finished, the files it changed, the commands it ran and what it
 replied, with the tokens it wrote. While the agent works, the time and tokens
 tick live, matching the CLI, and the header shows how full its context is.
 
 ### [Usage](over9k-usage): your limits before you hit them
+
+![Over9k Usage](over9k-usage/preview.png)
 
 The 5-hour and weekly limits of each plan you use (Claude, Codex and Gemini),
 with the plan's name, the percentage used in green, yellow from 50% or red from
@@ -82,6 +87,8 @@ their conversation (it needs `sqlite3`).
 ```
 
 ### [Switcher](over9k-switcher): Ctrl+Tab between agents
+
+![Over9k Switcher](over9k-switcher/preview.png)
 
 Jump between agents the way you switch apps. Hold Ctrl and tap Tab: a list
 opens with every agent on every space and every connected computer, most
