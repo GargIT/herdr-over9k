@@ -2,8 +2,9 @@
 
 **Run a fleet of coding agents and actually know what they're doing.** Over9k is
 a layout for [Herdr](https://herdr.dev) that brings every project and every agent
-into one view, so you can see what's going on, step in where you're needed, and
-keep the work moving without losing track. Use the whole layout, or add just the
+into one view. See what each agent is doing and where its work is going, let your
+agents keep your to-do lists, follow every prompt in the Timeline, and restart
+expired chats for a fraction of the tokens. Use the whole layout, or add just the
 parts you want to your own.
 
 ![Over9k](over9k/preview.png)
