@@ -274,7 +274,7 @@ export default class SidebarOptions extends View {
       .child(group("Status lines", "Details come from each agent's files. A status line adds more.", true))
       .child(check(["claudeStatus", "Claude Code", "Off: model, context, cache. On: also your limits, in a line that takes over from any status line you have (it's back when off)."]))
       .child(check(["agyStatus", "Antigravity", this.agyHere === false ? "Antigravity isn't installed on this computer." : "Off: model and name. On: also context and limits, in a line that takes over from any status line you have (it's back when off)."]))
-      .child(div().pt(8).text_size(11).text_color(t.dim).child("Codex and Pi need none. Applies to new agents."));
+      .child(div().pt(8).text_size(11).text_color(t.dim).child("No switch for Codex or Pi: everything about them is in their own files. Changes apply to agents you start next."));
     if (this.page === "todos") return page
       .child(group("To-do", "Each project's list, in the right panel. Agents add to it and tick it too.", true))
       .child(check(TODO_ITEMS[0]))
