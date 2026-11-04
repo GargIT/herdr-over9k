@@ -86,7 +86,7 @@ const RESUMER = `${appHome()}/mods/over9k-new-menu/resume.sh`;
 const ownModel = (key, x) => !x.model || (key === "claude" && /^claude-/.test(x.model)) || (key === "codex" && (!x.provider || x.provider === "openai"));
 
 // Model families with a logo of their own (as in over9k).
-const FAMILY = [{ match: /qwen/i, icon: "mods/over9k/qwen.svg", color: "#6f69f7" }];
+const FAMILY = [{ match: /qwen/i, icon: "mods/over9k-new-menu/qwen.svg", color: "#6f69f7" }];
 const norm = (url) => (url ?? "").replace(/\/+$/, "");
 // The folder a path is in, short enough to sit beside its name ("…" in front).
 const where = (path) => { const p = path.replace(home(), "~").split("/").slice(0, -1).join("/"); return p.length > 30 ? `\u2026${p.slice(-29)}` : p; };
@@ -494,6 +494,24 @@ export default class NewMenu extends View {
       .child(div().h(1).mx(4).my(4).bg(t.border));
   }
 
+  // A running local server: its process (by the --port on its command line) and
+  // servers.json's stop command, then over9k-server-stop asks before stopping it.
+  async askStop(m) {
+    const port = /:(\d+)/.exec(m.base)?.[1];
+    if (!port) return;
+    let pid = null, stop = null;
+    const ps = await exec("ps", ["-eo", "pid=,args="], this.machine ? { on: this.machine } : {}).catch(() => null);
+    for (const line of (ps?.stdout ?? "").split("\n")) {
+      if (new RegExp(`--port[ =]${port}\\b`).test(line) && !/<defunct>/.test(line)) { pid = Number(line.trim().split(/\s+/)[0]); break; }
+    }
+    try {
+      const entry = JSON.parse(await readTextFile(`${appHome()}/mods/over9k-new-menu/servers.json`))[`http://127.0.0.1:${port}`];
+      stop = typeof entry === "object" ? entry?.stop : null;
+    } catch {}
+    if (!pid && !stop) return notify({ title: `Can't find ${m.name}'s server`, body: `Nothing here runs with --port ${port}.`, level: "warning" });
+    openOverlay({ mod: "over9k-server-stop", kind: "dialog", width: 400, height: 170, props: { name: m.name, port: Number(port), pid, stop, agents: [] } });
+  }
+
   // The models an agent can start on: each local one (its server started first
   // when it's off).
   modelList(a, icon) {
@@ -501,7 +519,11 @@ export default class NewMenu extends View {
     return v_flex().flex_none()
       .child(this.back(`Start ${a.name} on`))
       .children(this.modelsFor(a).map(m => this.row(`model-${a.key}-${m.id}`, badged(icon(), `${m.id} ${m.name}`, t.popover), m.name,
-        () => this.start(["sh", RESUMER, a.key, "", m.id, m.provider], a.name), this.up[m.base] === false ? "starts its server" : "")));
+        () => this.start(["sh", RESUMER, a.key, "", m.id, m.provider], a.name), this.up[m.base] === false ? "starts its server" : "")))
+      // Each running local server, to stop (asks first, as the sidebar's chip does).
+      .children([...new Map(this.modelsFor(a).filter(m => this.up[m.base]).map(m => [m.base, m])).values()].map(m =>
+        this.row(`stop-${m.base}`, svg("mods/over9k-new-menu/stop.svg").size(12).flex_none().text_color(t.dim), `Stop ${m.name}'s server`,
+          () => this.askStop(m), m.base.replace(/^https?:\/\//, ""))));
   }
 
   // One agent's past sessions, under a Back row; the list scrolls. `icon` makes

@@ -1,7 +1,10 @@
 # Over9k for Herdr on Windows: install, update or remove (PowerShell 5.1 or 7).
 #
-#   powershell -ExecutionPolicy Bypass -File install.ps1               install or update
+#   powershell -ExecutionPolicy Bypass -File install.ps1               install or update the layout
 #   powershell -ExecutionPolicy Bypass -File install.ps1 -Uninstall    remove it again
+#   ... install.ps1 -Mod over9k-todo   only one Over9k mod, for your own layout:
+#                  over9k-sidebar, over9k-launcher, over9k-todo, over9k-timeline,
+#                  over9k-usage or over9k-switcher (add -Uninstall to remove it)
 #
 # Options:
 #   -HerdrHome <dir>  Herdr's home (default: what `herdr-app --help` says, else
@@ -15,6 +18,7 @@
 # Over9k's scripts are POSIX shell: on Windows they run in Git for Windows' sh.
 # Needs Git for Windows; jq and Python 3 for some features (see README).
 param(
+  [string]$Mod = "over9k",
   [string]$HerdrHome = "",
   [switch]$Uninstall,
   [switch]$NoClaude,
@@ -22,7 +26,11 @@ param(
   [switch]$Yes
 )
 $ErrorActionPreference = "Stop"
-$here = Join-Path $PSScriptRoot "over9k"  # the layout folder: layouts\, mods\, keys.json
+# What's installed: the layout folder (layouts\, mods\, keys.json), or one mod's.
+$here = Join-Path $PSScriptRoot $Mod.TrimEnd('\', '/')
+if (-not (Test-Path (Join-Path $here "mods"))) { Write-Error "No such Over9k folder: $Mod"; exit 2 }
+$isLayout = Test-Path (Join-Path $here "layouts")
+$hasKeys = Test-Path (Join-Path $here "keys.json")
 
 function Say($text) { Write-Host $text }
 function Ask($question) {
@@ -52,11 +60,16 @@ foreach ($root in @($env:ProgramFiles, ${env:ProgramFiles(x86)}, (Join-Path $env
   if ($root -and (Test-Path (Join-Path $root "Git\usr\bin\sh.exe"))) { $gitUsrBin = Join-Path $root "Git\usr\bin"; break }
 }
 if (-not $sh -and $gitUsrBin) { $sh = Join-Path $gitUsrBin "sh.exe" }
+# Over9k's setup.sh: Options' (the layout, the sidebar), else the one a mod brings.
 function Setup([string[]]$arguments) {
   if (-not $sh) { return 1 }
-  & $sh (Join-Path $modsDir "over9k-options\setup.sh") @arguments
+  $script = @((Join-Path $modsDir "over9k-options\setup.sh")) + @(Get-ChildItem $modsDir -Filter "over9k-*" -Directory -ErrorAction SilentlyContinue | ForEach-Object { Join-Path $_.FullName "setup.sh" }) |
+    Where-Object { Test-Path $_ } | Select-Object -First 1
+  if (-not $script) { return 0 }
+  & $sh $script @arguments
   return $LASTEXITCODE
 }
+function Has($name) { Test-Path (Join-Path $here "mods\$name") }
 
 # JSON objects as ordered hashtables (PowerShell 5.1 has no -AsHashtable).
 function ToTable($o) {
@@ -104,14 +117,15 @@ $packageMods = Get-ChildItem (Join-Path $here "mods") -Directory
 
 if ($Uninstall) {
   Say "Removing Over9k from $HerdrHome"
+  # Only what this install set up.
   if ($sh -and (Get-Command jq -ErrorAction SilentlyContinue)) {
-    Setup @("status", "off", $modsArg) | Out-Null
+    if ((Has "over9k") -or (Has "over9k-usage")) { Setup @("status", "off", $modsArg) | Out-Null }
+    if (Has "over9k-todos") { Setup @("todo", "off", $modsArg) | Out-Null }
     Setup @("cleanup") | Out-Null
-    Setup @("todo", "off", $modsArg) | Out-Null
   }
   foreach ($m in $packageMods) { Remove-Item (Join-Path $modsDir $m.Name) -Recurse -Force -ErrorAction SilentlyContinue }
-  Remove-Item (Join-Path $layoutsDir "over9k.json"), (Join-Path $layoutsDir "over9k.svg") -ErrorAction SilentlyContinue
-  if (Test-Path (Join-Path $HerdrHome "keys.json")) { Keys "remove" }
+  if ($isLayout) { Remove-Item (Join-Path $layoutsDir "over9k.json"), (Join-Path $layoutsDir "over9k.svg") -ErrorAction SilentlyContinue }
+  if ($hasKeys -and (Test-Path (Join-Path $HerdrHome "keys.json"))) { Keys "remove" }
   Say "Done. Your to-do lists stay in %USERPROFILE%\.local\share\over9k (delete it to remove them too)."
   Say "If Over9k's layout was showing, pick another in Herdr's settings."
   exit 0
@@ -140,14 +154,18 @@ foreach ($m in $packageMods) {
 }
 Say "  Mods: $($packageMods.Count) copied"
 
-$layout = Join-Path $layoutsDir "over9k.json"
-if ((Test-Path $layout) -and ((Get-FileHash $layout).Hash -ne (Get-FileHash (Join-Path $here "layouts\over9k.json")).Hash)) {
-  Copy-Item $layout "$layout.before-update" -Force
+if ($isLayout) {
+  $layout = Join-Path $layoutsDir "over9k.json"
+  if ((Test-Path $layout) -and ((Get-FileHash $layout).Hash -ne (Get-FileHash (Join-Path $here "layouts\over9k.json")).Hash)) {
+    Copy-Item $layout "$layout.before-update" -Force
+  }
+  Copy-Item (Join-Path $here "layouts\over9k.json"), (Join-Path $here "layouts\over9k.svg") $layoutsDir -Force
+  Say "  Layout: over9k"
 }
-Copy-Item (Join-Path $here "layouts\over9k.json"), (Join-Path $here "layouts\over9k.svg") $layoutsDir -Force
-Say "  Layout: over9k"
-Keys "add"
-Say "  Key bindings: added (Herdr's earlier keys.json is kept as keys.json.before-over9k)"
+if ($hasKeys) {
+  Keys "add"
+  Say "  Key bindings: added (Herdr's earlier keys.json is kept as keys.json.before-over9k)"
+}
 
 # Git for Windows on PATH: Herdr runs the mods' scripts with `sh`.
 if (-not (Get-Command sh -ErrorAction SilentlyContinue)) {
@@ -177,7 +195,7 @@ if ($missing.Count) { Say ""; Say "Missing (Over9k works without them, minus the
 
 # Claude Code: its status line, the to-do rule, command and hook.
 $claudeHere = (Test-Path (Join-Path $env:USERPROFILE ".claude")) -or (Get-Command claude -ErrorAction SilentlyContinue)
-if ($claudeHere -and -not $NoClaude -and $sh -and (Ask "Set up Claude Code for Over9k (status line, to-do rule and hook; your own status line is kept aside)?")) {
+if ($isLayout -and $claudeHere -and -not $NoClaude -and $sh -and (Ask "Set up Claude Code for Over9k (status line, to-do rule and hook; your own status line is kept aside)?")) {
   if (Get-Command jq -ErrorAction SilentlyContinue) {
     Setup @("status", "on", $modsArg) | Out-Null
     Setup @("todo", "on", $modsArg) | Out-Null
@@ -189,6 +207,12 @@ if ($claudeHere -and -not $NoClaude -and $sh -and (Ask "Set up Claude Code for O
 }
 
 Say ""
+if (-not $isLayout) {
+  Say ""
+  Say "Next: open Herdr (or restart it). $Mod docks itself the first time it's seen;"
+  Say "  its RECIPE.md says what it needs. Remove: install.ps1 -Mod $Mod -Uninstall"
+  exit 0
+}
 Say "Next:"
 Say "  1. Open Herdr (or restart it), then Settings > Layout > Over9k."
 Say "  2. Over9k help & options is at the bottom of the sidebar: pick your projects"

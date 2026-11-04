@@ -9,15 +9,24 @@
 
 import { View, div, svg, image } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
-import { agents, spaces, panes, run, props, closeOverlay, theme, shared, nextCommand, home } from "herdr";
+import { agents, spaces, panes, run, props, closeOverlay, theme, shared, setShared, nextCommand, home } from "herdr";
 import { agentTask } from "./agent-name.js";
 
 const APP_NAMES = { antigravity: "Antigravity" };
 const APP_ICONS = { antigravity: "icons/antigravity.svg" };
 
 // The agents, most recent first; ones never focused after, in the sidebar's order.
+// Over9k's sidebar keeps that order (every focus); on its own, this switcher keeps
+// its own: the agent you're in when it opens, and each one it switches to.
+const OWN = "over9k-switcher.recent";
+function remember(address) {
+  if (!address || shared("over9k.recentAgents")) return;
+  const live = new Set(agents().map((a) => a.address));
+  setShared(OWN, [address, ...(shared(OWN) ?? []).filter((x) => x !== address && live.has(x))]);
+}
 function list() {
-  const recent = shared("over9k.recentAgents") ?? [];
+  remember(agents().find((a) => a.focused)?.address);
+  const recent = shared("over9k.recentAgents") ?? shared(OWN) ?? [];
   const rank = (a) => { const i = recent.indexOf(a.address); return i < 0 ? recent.length : i; };
   return agents().map((a, i) => ({ a, i })).sort((x, y) => rank(x.a) - rank(y.a) || x.i - y.i).map((x) => x.a);
 }
@@ -67,6 +76,7 @@ export default class Switcher extends View {
     const s = spaces().find((x) => x.id === a.space || (x.tabs ?? []).some((t) => t.id === a.tab));
     if (s && !s.active) run("space.select", { id: s.id });
     run("agent.focus", { terminal: a.address });
+    remember(a.address);
   }
 
   render(cx) {

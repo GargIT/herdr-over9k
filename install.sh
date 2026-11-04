@@ -2,9 +2,12 @@
 # Over9k for Herdr: install, update or remove (Linux, macOS, and Windows in Git Bash;
 # on Windows, install.ps1 does the same from PowerShell).
 #
-#   sh install.sh              install, or update an earlier install (settings are kept)
-#   sh install.sh --uninstall  remove Over9k's mods, layout, key bindings and Claude
-#                              Code pieces (your to-do lists stay)
+#   sh install.sh              install the Over9k layout, or update it (settings are kept)
+#   sh install.sh <mod>        only one Over9k mod, for your own layout: over9k-sidebar,
+#                              over9k-launcher, over9k-todo, over9k-timeline,
+#                              over9k-usage or over9k-switcher
+#   sh install.sh [<mod>] --uninstall  remove it again (mods, layout, key bindings and
+#                              Claude Code pieces; your to-do lists stay)
 # Options:
 #   --home <dir>   Herdr's home (default: what `herdr-app --help` says, else
 #                  $HERDR_APP_HOME, else ~/.config/herdr-app)
@@ -13,19 +16,24 @@
 #   --yes          don't ask
 set -eu
 
-here=$(cd "$(dirname "$0")/over9k" && pwd)  # the layout folder: layouts/, mods/, keys.json
-home_dir="" claude=ask yes=no mode=install
+home_dir="" claude=ask yes=no mode=install share=over9k
 while [ $# -gt 0 ]; do
   case "$1" in
     --home) home_dir=${2:?--home needs a folder}; shift ;;
     --no-claude) claude=no ;;
     --yes|-y) yes=yes ;;
     --uninstall) mode=uninstall ;;
-    -h|--help) sed -n '2,15s/^# \{0,1\}//p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,18s/^# \{0,1\}//p' "$0"; exit 0 ;;
+    over9k*) share=${1%/} ;;
     *) echo "Unknown option: $1 (see --help)" >&2; exit 2 ;;
   esac
   shift
 done
+
+# What's installed: the layout folder (layouts/, mods/, keys.json), or one mod's.
+[ -d "$(dirname "$0")/$share/mods" ] || { echo "No such Over9k folder: $share" >&2; exit 2; }
+here=$(cd "$(dirname "$0")/$share" && pwd)
+layout=no; [ -d "$here/layouts" ] && layout=yes
 
 say() { printf '%s\n' "$*"; }
 ask() { # ask "question" -> 0 for yes (the default), 1 for no
@@ -49,7 +57,15 @@ mods_dir="$home_dir/mods"
 # Python take on Windows too).
 mods_arg=$mods_dir
 command -v cygpath >/dev/null 2>&1 && mods_arg=$(cygpath -m "$mods_dir")
-setup() { sh "$mods_dir/over9k-options/setup.sh" "$@"; }
+# Over9k's setup.sh: Options' (the layout, the sidebar), else the one a mod brings
+# (To-do, Usage); none: nothing to set up.
+setup() {
+  for f in "$mods_dir/over9k-options/setup.sh" "$mods_dir"/over9k-*/setup.sh; do
+    [ -f "$f" ] && { sh "$f" "$@"; return; }
+  done
+}
+# Whether what's being installed has this mod.
+has() { [ -d "$here/mods/$1" ]; }
 
 # Key bindings: Over9k's (keys.json here) merged into Herdr's, or taken out again
 # where they're still Over9k's. Needs Python; without it, says what to add.
@@ -95,14 +111,16 @@ EOF
 
 if [ "$mode" = uninstall ]; then
   say "Removing Over9k from $home_dir"
-  if [ -f "$mods_dir/over9k-options/setup.sh" ] && command -v jq >/dev/null 2>&1; then
-    setup status off "$mods_arg" || true
-    setup todo off "$mods_arg" || true
+  # Only what this install set up: the status line (layout, sidebar, Usage) and
+  # the to-do pieces (layout, To-do).
+  if command -v jq >/dev/null 2>&1; then
+    { has over9k || has over9k-usage; } && { setup status off "$mods_arg" || true; }
+    has over9k-todos && { setup todo off "$mods_arg" || true; }
     setup cleanup || true
   fi
   for d in "$here"/mods/*/; do rm -rf "$mods_dir/$(basename "$d")"; done
-  rm -f "$home_dir/layouts/over9k.json" "$home_dir/layouts/over9k.svg"
-  [ -f "$home_dir/keys.json" ] && keys remove
+  [ "$layout" = yes ] && rm -f "$home_dir/layouts/over9k.json" "$home_dir/layouts/over9k.svg"
+  [ -f "$home_dir/keys.json" ] && [ -f "$here/keys.json" ] && keys remove
   say "Done. Your to-do lists are still in ${XDG_DATA_HOME:-$HOME/.local/share}/over9k (delete it to remove them too)."
   say "If Over9k's layout was showing, pick another in Herdr's settings."
   exit 0
@@ -129,13 +147,15 @@ for d in "$here"/mods/*/; do
 done
 say "  Mods: $(ls -d "$here"/mods/*/ | wc -l | tr -d ' ') copied"
 
-# The layout (a changed copy of an earlier one is kept beside it).
-if [ -f "$home_dir/layouts/over9k.json" ] && ! cmp -s "$here/layouts/over9k.json" "$home_dir/layouts/over9k.json"; then
-  cp "$home_dir/layouts/over9k.json" "$home_dir/layouts/over9k.json.before-update"
+if [ "$layout" = yes ]; then
+  # The layout (a changed copy of an earlier one is kept beside it).
+  if [ -f "$home_dir/layouts/over9k.json" ] && ! cmp -s "$here/layouts/over9k.json" "$home_dir/layouts/over9k.json"; then
+    cp "$home_dir/layouts/over9k.json" "$home_dir/layouts/over9k.json.before-update"
+  fi
+  cp "$here/layouts/over9k.json" "$here/layouts/over9k.svg" "$home_dir/layouts/"
+  say "  Layout: over9k"
 fi
-cp "$here/layouts/over9k.json" "$here/layouts/over9k.svg" "$home_dir/layouts/"
-say "  Layout: over9k"
-keys add && say "  Key bindings: added (Herdr's earlier keys.json is kept as keys.json.before-over9k)"
+[ -f "$here/keys.json" ] && keys add && say "  Key bindings: added (Herdr's earlier keys.json is kept as keys.json.before-over9k)"
 
 # Hooks earlier versions of Over9k added (removed features).
 setup cleanup || true
@@ -154,7 +174,7 @@ fi
 
 # Claude Code: its status line (the sidebar's agent details, the usage rows and
 # the Timeline read it), the to-do rule, command and hook.
-if [ -d "$HOME/.claude" ] || command -v claude >/dev/null 2>&1; then
+if [ "$layout" = yes ] && { [ -d "$HOME/.claude" ] || command -v claude >/dev/null 2>&1; }; then
   if [ "$claude" != no ] && ask "Set up Claude Code for Over9k (status line, to-do rule and hook; your own status line is kept aside)?"; then
     if command -v jq >/dev/null 2>&1; then
       setup status on "$mods_arg" && setup todo on "$mods_arg" && say "  Claude Code: status line, to-do rule, todo command and hook set up"
@@ -166,6 +186,12 @@ if [ -d "$HOME/.claude" ] || command -v claude >/dev/null 2>&1; then
 fi
 
 say ""
+if [ "$layout" = no ]; then
+  say ""
+  say "Next: open Herdr (or restart it). $share docks itself the first time it's seen;"
+  say "  Its RECIPE.md says what it needs. Remove: sh install.sh $share --uninstall"
+  exit 0
+fi
 say "Next:"
 say "  1. Open Herdr (or restart it), then Settings › Layout › Over9k."
 if herdr-app status >/dev/null 2>&1; then say "     It's running: herdr-app do layout.switch '{\"name\":\"over9k\"}' switches now."; fi

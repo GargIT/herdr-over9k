@@ -1,8 +1,9 @@
 #!/bin/sh
 # Over9k's setup outside Herdr: what Options' switches turn on and off, and what
 # install.sh sets up. Linux, macOS, and Windows through Git Bash.
-#   setup.sh status on|off <mods>     Claude Code's status line (over9k/statusline.sh);
-#                                     someone else's is kept aside and comes back when off
+#   setup.sh status on|off <mods|script>  Claude Code's status line: <script>, or
+#                                     <mods>/over9k/statusline.sh; someone else's is kept
+#                                     aside and comes back when off
 #   setup.sh cleanup                  takes out hooks earlier versions of Over9k added
 #   setup.sh todo on|off <mods>       the to-do rule (CLAUDE.md, AGENTS.md), the `todo`
 #                                     command (~/.local/bin) and its hook (UserPromptSubmit)
@@ -40,15 +41,18 @@ hook() {
 case "$cmd" in
   status)
     was="$HOME/.claude/.over9k-statusline-was.json"
+    # Any of Over9k's status lines (the layout's, or a standalone mod's) is ours.
+    ours='test("over9k[^/\"]*/statusline\\.sh")'
+    case "$mods" in *statusline.sh) script=$mods ;; *) script="$mods/over9k/statusline.sh" ;; esac
     if [ "$on" = on ]; then
       need_jq
-      [ -s "$settings" ] && jq -e '(.statusLine.command // "") as $c | ($c | length) > 0 and ($c | contains("over9k/statusline.sh") | not)' "$settings" >/dev/null 2>&1 \
+      [ -s "$settings" ] && jq -e "(.statusLine.command // \"\") as \$c | (\$c | length) > 0 and (\$c | $ours | not)" "$settings" >/dev/null 2>&1 \
         && jq '.statusLine' "$settings" > "$was"
-      edit '.statusLine = {type: "command", command: $c, refreshInterval: 5}' --arg c "sh \"$mods/over9k/statusline.sh\""
+      edit '.statusLine = {type: "command", command: $c, refreshInterval: 5}' --arg c "sh \"$script\""
     elif [ -s "$was" ]; then
       edit '.statusLine = $w[0]' --slurpfile w "$was" && rm -f "$was"
     else
-      edit 'if ((.statusLine.command // "") | contains("over9k/statusline.sh")) then del(.statusLine) else . end'
+      edit "if ((.statusLine.command // \"\") | $ours) then del(.statusLine) else . end"
     fi ;;
   cleanup)
     # Next-prompt suggestions (removed): their Stop hook.

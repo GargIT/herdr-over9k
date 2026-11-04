@@ -2,8 +2,9 @@
 
 Over9k is a set of [Herdr](https://herdr.dev) mods for working with many coding
 agents at once. It adds a sidebar that lists your projects and the agents in
-them, a to-do list per project that you and your agents share, a timeline of
-each conversation, and your plans' usage limits, all in one layout.
+them, agentic to-do lists your agents keep for you, a timeline of each
+conversation, and your plans' usage limits. You can use it as a whole layout,
+or add any of its six mods to your own.
 
 ![Over9k](over9k/preview.png)
 
@@ -13,20 +14,23 @@ each conversation, and your plans' usage limits, all in one layout.
   parked. Each shows its branch, uncommitted files, pull requests and
   push/pull. Under each project are its agents, with their status, model,
   context and time since their last reply. Under each agent are its subagents,
-  background commands and scheduled prompts. Links show work that crosses
-  spaces or computers, and Open folder opens any of them. You can pick
-  several rows and act on them together. Past chats can be resumed from the +
-  menu. When an agent's prompt cache has expired, "clear + recap" restarts it
-  from a short summary. You can also start Pi on another model, local ones too.
+  background commands and scheduled prompts. Links show where agents are going:
+  one working in another space, or on another computer over SSH, is marked at
+  both ends. Open folder opens any project, and you can pick several rows to
+  act on together. When an agent's prompt cache has expired, a red "exp."
+  becomes a token-saving "clear + recap": it restarts the agent from a short
+  summary instead of having it re-read the whole chat. The + menu resumes past
+  chats and starts Pi on local models like Qwen.
 - **Tab bar.** Buttons for Files, Changes, To-do and Timeline. Ctrl+Tab switches
   between agents, most recent first. Closing a tab or pane asks first, and says
   what's still running.
-- **To-do panel.** Each project's list, with tabs for the project you're in and
-  for All your pinned projects. Agents add and tick items with the `todo`
-  command. **Log** has agents add what you ask for as you ask it. **Sync** keeps
-  the project's own TODO.md matching the list. Each to-do can be sent to the
-  current conversation or to a new agent, and several can be marked done, sent
-  or deleted together.
+- **To-do panel.** Agentic to-do lists, one per project, with tabs for the
+  project you're in and for All your pinned projects.
+  - **Log:** agents add what you ask for as you ask it, and tick it off when
+    it's done, with the `todo` command.
+  - **Sync:** the list stays in step with the project's own TODO.md.
+  - **Send:** any to-do goes to the current conversation or to a new agent.
+  - **Several at once:** mark done, send or delete them together.
 - **Timeline panel.** Your prompts in the agent you're in, each with how long
   the agent worked, when it finished, the tokens it wrote, and the files and
   commands it touched. Click a prompt to read the whole reply. The header shows
@@ -35,6 +39,30 @@ each conversation, and your plans' usage limits, all in one layout.
   Settings.
 - **Help & options** at the bottom of the sidebar. Help is illustrated. Options
   covers what each row shows, the panels, and the Claude Code extras.
+
+## Mods on their own
+
+Each folder below is one mod you can add to your own Herdr layout, without the
+rest of Over9k. Each has its own `RECIPE.md` and `preview.png`.
+
+| Folder | What it is | Where it goes |
+|---|---|---|
+| [`over9k-sidebar`](over9k-sidebar) | Projects and agents, with git, subagents, links, the expired-cache recap, hand-off, and its own Help & Options | Docks on the left |
+| [`over9k-launcher`](over9k-launcher) | Start agents and CLIs, resume sessions, Pi on local models, stop a model's server | Ctrl+Shift+A |
+| [`over9k-todo`](over9k-todo) | The agentic to-do panel and the `todo` command | Docks on the right |
+| [`over9k-timeline`](over9k-timeline) | The conversation's prompts, with time and tokens | Docks on the right |
+| [`over9k-usage`](over9k-usage) | Claude, Codex and Gemini limits in one line | Docks at the bottom |
+| [`over9k-switcher`](over9k-switcher) | Ctrl+Tab between agents, most recent first | Ctrl+Tab |
+
+To add one:
+
+```sh
+sh install.sh over9k-todo            # or: install.ps1 -Mod over9k-todo
+sh install.sh over9k-todo --uninstall
+```
+
+The mod docks itself the first time Herdr sees it. The Over9k layout already
+includes all six, so install either the layout or individual mods, not both.
 
 ## Requirements
 
@@ -165,7 +193,10 @@ Other computers you've added to Herdr are reached through Herdr itself.
 ## In this repo
 
 ```
-install.sh, install.ps1   install, update, uninstall
+install.sh, install.ps1   install, update, uninstall (the layout, or one mod)
+tools/build-mods.py       builds the mod folders below from over9k/mods
+over9k-sidebar/ … over9k-switcher/   the six mods on their own, each with
+                          mods/, RECIPE.md, preview.png (and keys.json)
 over9k/                   the Over9k layout, as Herdr shares layouts:
   RECIPE.md, preview.png  the brief to build it from, and its picture
   keys.json               Over9k's key bindings

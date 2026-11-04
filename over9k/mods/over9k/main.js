@@ -30,6 +30,10 @@ function closeAsk(picked) {
   else openOverlay({ mod: "over9k-close", kind: "dialog", width: 380, height: 150, props: picked });
 }
 
+// Whether a mod shows anywhere in this layout.
+function hasMod(node, mod) {
+  return Boolean(node) && (node.content?.mod === mod || (node.children ?? []).some((c) => hasMod(c, mod)));
+}
 function find(node, id) {
   if (node?.id === id) return node;
   for (const child of node?.children ?? []) {
@@ -2588,7 +2592,12 @@ export default class Spaces extends View {
       .child(v_flex().flex_1().min_h(0).px(8).pb(14).overflow_y_scrollbar().mode("always")
         .on_mouse_up("left", (_e, cx) => { this.pressed = null; cx.notify(); })
         .children(list))
-
+      // On its own (no Over9k footer in this window): its help and options here.
+      .when(!collapsed && !hasMod(layout(), "over9k-footer"), (el) => el.child(h_flex().id("over9k-options-row").h(32).flex_none().mx(8).mb(6).px(8).gap(9)
+        .items_center().rounded(7).cursor_pointer().text_color(t.muted).border_t(1).border_color(t.border)
+        .hover((s) => s.bg(t.hover).text_color(t.foreground))
+        .on_click(() => openOverlay({ mod: "over9k-options", kind: "dialog", width: 740, height: 600 }))
+        .child(svg("mods/workspace-chrome/settings.svg").size(14).flex_none()).child("Over9k help & options")));
   }
 }
 

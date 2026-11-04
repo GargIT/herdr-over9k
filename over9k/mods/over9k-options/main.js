@@ -100,7 +100,7 @@ export default class SidebarOptions extends View {
       try { j = JSON.parse(text ?? "{}"); } catch {}
       const cmds = (ev) => (j.hooks?.[ev] ?? []).flatMap((h) => h.hooks ?? []).map((h) => h.command ?? "");
       this.claude = {
-        claudeStatus: (j.statusLine?.command ?? "").includes("over9k/statusline.sh"),
+        claudeStatus: /over9k[^/"]*\/statusline\.sh/.test(j.statusLine?.command ?? ""),
         todoHook: cmds("UserPromptSubmit").some((c) => c.includes("todo-hook.sh")),
       };
       this.dirty = true;

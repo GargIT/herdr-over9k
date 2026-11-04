@@ -81,16 +81,22 @@ export default class Prompts extends View {
         const info = await readTextFile(`${home()}/.cache/claude-agents/${this.agent}.json`).catch(() => null);
         let path = null;
         try { path = info && JSON.parse(info).transcript; } catch {}
+        // Without Over9k's status line: Claude Code's folder for the agent's
+        // working directory (the reader takes its newest conversation).
+        const a = agents().find((x) => x.address === this.agent);
+        const cwd = panes().find((p) => p.terminal === this.agent)?.cwd;
+        const claude = a && (a.app === "claude-code" || a.program?.key === "claude" || /claude/i.test(a.program?.name ?? ""));
+        if (!path && claude && cwd) path = `${home()}/.claude/projects/${cwd.replace(/[^A-Za-z0-9]/g, "-")}`;
         if (!path) { this.note = "The timeline shows Claude Code agents"; this.prompts = []; this.transcript = null; cx.notify(); return; }
         // Read only when it has grown (the reader checks its size).
-        const r = await python(["-I", READER(), path, path === this.transcript && this.size != null ? String(this.size) : ""]).catch(() => null);
+        const r = await python(["-I", READER(), path, this.transcript && this.size != null ? `${this.transcript}\t${this.size}` : ""]).catch(() => null);
         let got = null;
         try { got = JSON.parse(r?.stdout ?? ""); } catch {}
         const list = got?.prompts;
         if (!Array.isArray(list)) return;
         this.prompts = list.reverse();
         this.context = got.context ?? 0;
-        this.transcript = path;
+        this.transcript = got.path ?? path;
         this.size = got.size ?? null;
         this.note = this.prompts.length ? "" : "No prompts yet";
         if (this.at >= this.prompts.length) this.at = 0;

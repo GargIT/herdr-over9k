@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 # Your prompts in a Claude Code transcript, for the Prompts panel (over9k-prompts):
-#   prompts.py <transcript.jsonl> [size]
-# With size (what it was when last read), it prints {"same": true} when the
-# file is still that size, and reads nothing.
+#   prompts.py <transcript.jsonl | folder> [last]
+# A folder (Claude Code's for a working directory, ~/.claude/projects/<slug>):
+# its newest conversation. last ("<path>\t<size>", what was read before): when
+# that's still the file and its size, it prints {"same": true} and reads nothing.
 # prints JSON: {prompts: [{at, done, text, also, reply, edits, cmds, tools, tokens}],
 # oldest first, context}; context: what the agent holds now (its last reply's input,
 # cached and not: the CLI status line's "context" figure). A prompt is
@@ -29,10 +30,21 @@ def text_of(content):
 
 
 def main():
-    size = os.path.getsize(sys.argv[1])
-    if len(sys.argv) > 2 and sys.argv[2] == str(size):
+    path = sys.argv[1]
+    if not os.path.exists(path):
+        print('{"prompts": [], "context": 0, "size": 0, "path": null}')
+        return
+    if os.path.isdir(path):
+        files = [os.path.join(path, f) for f in os.listdir(path) if f.endswith(".jsonl")]
+        if not files:
+            print('{"prompts": [], "context": 0, "size": 0, "path": null}')
+            return
+        path = max(files, key=os.path.getmtime)
+    size = os.path.getsize(path)
+    if len(sys.argv) > 2 and sys.argv[2] == f"{path}\t{size}":
         print('{"same": true}')
         return
+    sys.argv[1] = path
     out, cur, context = [], None, 0
     with open(sys.argv[1], encoding="utf-8", errors="replace") as f:
         for line in f:
@@ -83,7 +95,7 @@ def main():
                         cur["cmds"] += 1
     for p in out:
         p["tokens"] = sum(p.pop("_tok").values())
-    json.dump({"prompts": out, "context": context, "size": size}, sys.stdout)
+    json.dump({"prompts": out, "context": context, "size": size, "path": path}, sys.stdout)
 
 
 main()

@@ -1,0 +1,49 @@
+#!/bin/sh
+# Antigravity CLI (agy) custom status line (settings.json statusLine, stacked
+# under the default one): usage limits per model group. Optional: see README
+# (Antigravity) for how to set it up. Needs jq. Inside Herdr it saves model,
+# effort and context for this terminal in the same file Claude Code's status
+# line writes (~/.cache/claude-agents/<HC_TERMINAL_ID>.json), which Over9k's
+# Spaces list shows after the agent's name. lastAt (for "3m") moves when the
+# output token count does.
+in=$(cat)
+# Its title: agy's own, else its summary's (agy often sends null), as agy-title.sh.
+title=$(printf '%s' "$in" | sh "$(dirname "$0")/agy-title.sh")
+[ "$title" = Antigravity ] && title=""
+# The line itself (under agy's own): 5-hour and weekly limits per model group
+# (agy's quota buckets: gemini-*, and 3p-* for Claude and GPT), each used %
+# coloured (green, yellow from 50%, red from 80%) and when it resets, dimmed; the
+# group the current model draws on is in bold.
+printf '%s' "$in" | jq -r '
+  def left: (. // 0) as $s | if $s <= 0 then "now"
+    elif $s < 3600 then "\($s / 60 | floor)m"
+    elif $s < 86400 then "\($s / 3600 | floor)h \($s % 3600 / 60 | floor)m"
+    else "\($s / 86400 | floor)d \($s % 86400 / 3600 | floor)h" end;
+  def pct: ((1 - (.remaining_fraction // 1)) * 100) as $u
+    | (if $u >= 80 then "31" elif $u >= 50 then "33" else "32" end) as $c | "\u001b[\($c)m\($u | round)%\u001b[0m";
+  def dim: "\u001b[2m\(.)\u001b[0m";
+  def bucket($q; $k; $label): $q[$k] // empty | "\($label) \(pct) \("· \(.reset_in_seconds | left)" | dim)";
+  (.quota // {}) as $q
+  | ((.model.display_name // "") | test("^Gemini"; "i")) as $gem
+  | [["gemini", "Gemini", $gem], ["3p", "Claude/GPT", ($gem | not)]]
+  | map(. as [$p, $name, $mine]
+      | [bucket($q; "\($p)-5h"; "5h"), bucket($q; "\($p)-weekly"; "week")] | select(length > 0)
+      | (if $mine then "\u001b[1m\($name)\u001b[0m" else $name end) + " " + join("  "))
+  | join("     ")' 2>/dev/null
+# The limits and plan for the sidebar's usage section (over9k-usage).
+u="$HOME/.cache/over9k/usage"; mkdir -p "$u"
+printf '%s' "$in" | jq -ce 'select(.quota != null) | {at: (now | floor), plan: .plan_tier, quota}' \
+  > "$u/antigravity.json.tmp" 2>/dev/null && mv "$u/antigravity.json.tmp" "$u/antigravity.json" || rm -f "$u/antigravity.json.tmp"
+[ -n "$HC_TERMINAL_ID" ] || exit 0
+dir="$HOME/.cache/claude-agents"; mkdir -p "$dir"
+f="$dir/$HC_TERMINAL_ID.json"
+prev=$(cat "$f" 2>/dev/null); [ -n "$prev" ] || prev={}
+printf '%s' "$in" | jq -c --argjson prev "$prev" --arg title "$title" '
+  (.context_window.total_output_tokens // 0) as $out
+  | {model: (.model.display_name // .model.id // "" | sub(" *\\((Low|Medium|High|Xhigh|Max|Minimal)\\)$"; "")),
+     id: .model.id, effort: (.model.effort // null), agent: "antigravity",
+     context: .context_window.used_percentage, out: $out,
+     lastAt: (if $prev.lastAt != null and ($prev.out // 0) == $out then $prev.lastAt
+              elif $out > 0 then (now | floor) else null end),
+     conversation: (if (.conversation_id // "") != "" then .conversation_id else $prev.conversation // null end),
+     title: (if $title != "" then $title else $prev.title // null end)}' > "$f.tmp" 2>/dev/null && mv "$f.tmp" "$f" || rm -f "$f.tmp"

@@ -1,0 +1,9 @@
+{
+  "global": {
+    "ctrl-tab": "mod.open:over9k-switcher"
+  },
+  "mod:over9k-switcher": {
+    "ctrl-tab": "over9k-switcher.next",
+    "ctrl-shift-tab": "over9k-switcher.prev"
+  }
+}
