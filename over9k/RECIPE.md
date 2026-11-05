@@ -136,6 +136,11 @@ Left to right. All colours are theme names (`canvas`, `chrome`, `background`,
   - While the agent works, its time and ↓ tokens are read from the CLI's own
     screen every 2s, so they match the CLI exactly.
 - **Usage:** click a row to show every limit as a 3px bar, with its reset time.
+  Click a limit to make it that row's headline and list it first; click it again
+  for the fullest (`over9k.usageHeadline`, by service; a limit that's gone falls back).
+  A Bedrock row (one per computer) has `bedrock-cost.py`'s cost from the transcripts
+  instead: tabs for 30d, 2w, 1w, 1d (also the row's number) over bars by day, stacked by
+  model, and each model's cost for the tab as the chart's key.
   The block resizes to fit.
 - **Updates:** the installer saves where it ran from in
   `~/.local/share/over9k/source.json` (the folder, and its commit and branch if

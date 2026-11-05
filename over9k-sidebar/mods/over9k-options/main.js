@@ -286,7 +286,7 @@ export default class SidebarOptions extends View {
       .children(AGENT_ITEMS.map(check))
       .child(needs("agents", "Antigravity's context needs its session footer."));
     if (this.page === "usage") return page
-      .child(group("Usage", "Each service's 5-hour and weekly limits. Green, yellow from 50%, red from 80%. Click a row for every limit.", true))
+      .child(group("Usage", "Each service's 5-hour and weekly limits. Green, yellow from 50%, red from 80%. Click a row for every limit, and a limit to make it that row's headline.", true))
       .children(USAGE_ITEMS.map(check))
       .child(needs("usage", "Claude's and Gemini's limits need their session footer."));
     if (this.page === "timeline") return page

@@ -74,7 +74,11 @@ tick live, matching the CLI, and the header shows how full its context is.
 The 5-hour and weekly limits of each plan you use (Claude, Codex and Gemini),
 with the plan's name, the percentage used in green, yellow from 50% or red from
 80%, and how long until it resets. Click a service to see every limit it
-reports, as bars. In the layout it sits above the sidebar's footer; on its
+reports, as bars, and click a limit to make it that service's headline instead
+of its fullest. Claude on Amazon Bedrock has no limits, so its row shows cost
+(an estimate from tokens at list prices), one row per computer: click it for
+tabs (30 days, 2 weeks, 1 week, 1 day) and a chart of each day's cost by model.
+The tab you pick is also the row's number. In the layout it sits above the sidebar's footer; on its
 own, it's a single line along the bottom of the window. Codex's numbers come
 from its latest session. Claude's need Over9k's session footer for Claude
 Code, and Gemini's the one for Antigravity (see [Session footers](#session-footers)). Claude on Amazon
