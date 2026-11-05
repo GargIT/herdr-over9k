@@ -3,17 +3,17 @@
 // service with limits: its name, plan, when its fullest limit resets, a dot and
 // that limit's used %; a click shows every limit as a bar. A click on a limit makes
 // it the row's headline and puts it first (shared "over9k.usageHeadline"), until it's
-// clicked again. Claude on Amazon Bedrock has no limits: its row has a cost instead,
+// clicked again. Claude billed by use has no limits: its row has a cost instead,
 // and tabs for the period it covers, with a chart by day and model. Local models have
 // no limits, so they aren't here.
 // Where the numbers come from (this computer):
 //   Claude       ~/.cache/over9k/usage/claude.json, saved by Over9k's optional status
 //                line (claude-statusline.sh: Options › Session footers, or "Show its
 //                limits" here), the only thing Claude Code gives its limits to; plan
-//                from ~/.claude.json's oauthAccount.planDisplayName. On Amazon Bedrock
-//                (no plan limits, paid per use; claude.json says so) the row shows cost:
-//                bedrock-cost.py next to this file, from the transcripts. Run on each
-//                machine, so one on Bedrock gets a row of its own.
+//                from ~/.claude.json's oauthAccount.planDisplayName. Billed by use
+//                (Bedrock, Vertex, Foundry, an API key: no plan limits; claude.json says
+//                which) the row shows cost: api-cost.py next to this file, from the
+//                transcripts. Run on each machine, so one billed by use gets its own row.
 //   Gemini       ~/.cache/over9k/usage/antigravity.json, written by
 //                Antigravity's (over9k/antigravity/agy-statusline.sh, optional: README):
 //                gemini-* and 3p-* (Claude and GPT) buckets, and the plan.
@@ -51,22 +51,23 @@ function windowName(min) {
 }
 // "Google AI Ultra" is "Ultra"; "Claude Max" is "Max".
 const money = (n) => `$${(n ?? 0).toFixed(2)}`;
-const SPEND_TIP = "Cost on Amazon Bedrock: estimated from tokens at list prices, not your AWS bill";
-// The tabs of a Bedrock row: what its chart and headline cover.
+const SPEND_TIP = "Estimated from tokens at list prices, not your bill";
+// The tabs of a row billed by use: what its chart and headline cover.
 const PERIODS = [{ label: "30 days", days: 30, tab: "30d" }, { label: "2 weeks", days: 14, tab: "2w" },
   { label: "1 week", days: 7, tab: "1w" }, { label: "1 day", days: 1, tab: "1d" }];
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const dayName = (day) => { const [, m, d] = day.split("-"); return `${MONTHS[m - 1]} ${Number(d)}`; };
 const planName = (p) => (p ?? "").replace(/^(google ai|claude|chatgpt)\s+/i, "").replace(/^\w/, (c) => c.toUpperCase()) || null;
 
-// A computer's Claude on Bedrock (m: a machine, or null for this one), or null if it isn't.
-async function bedrockRow(m) {
-  const script = await readTextFile(`${appHome().replace(/\\/g, "/")}/mods/over9k-usage/bedrock-cost.py`).catch(() => null);
+// A computer's Claude billed by use (m: a machine, or null for this one), or null if it isn't.
+async function apiRow(m) {
+  const script = await readTextFile(`${appHome().replace(/\\/g, "/")}/mods/over9k-usage/api-cost.py`).catch(() => null);
   if (!script) return null;
   const options = m ? { on: m } : {};
   const r = await exec("python3", ["-c", script], options).catch(() => null) ?? await exec("python", ["-c", script], options).catch(() => null);
   try {
-    return { key: m ? `claude:${m}` : "claude", service: "claude", name: "Claude", plan: "Bedrock", where: m, days: JSON.parse(r.stdout).days };
+    const { plan, days } = JSON.parse(r.stdout);
+    return { key: m ? `claude:${m}` : "claude", service: "claude", name: "Claude", plan, where: m, days };
   } catch { return null; }
 }
 
@@ -108,8 +109,8 @@ export default class Usage extends View {
     const limit = (label, used, resetsAt) => resetsAt && resetsAt <= now ? { label, used: 0, left: null } : { label, used: Math.max(0, Math.min(100, used ?? 0)), left: resetsAt ? resetsAt - now : null };
 
     const claude = await readJson(`${dir}/claude.json`);
-    if (claude?.bedrock) {
-      const row = await bedrockRow(null);
+    if (claude?.api || claude?.bedrock) {
+      const row = await apiRow(null);
       if (row) out.push(row);
     } else if (claude) {
       const plan = (await exec("sh", ["-c", CLAUDE_PLAN]).catch(() => null))?.stdout.trim();
@@ -144,7 +145,7 @@ export default class Usage extends View {
       if (this.fetching.has(m)) continue;
       this.fetching.add(m);
       cx.spawn(async (cx) => {
-        const row = await bedrockRow(m);
+        const row = await apiRow(m);
         this.fetching.delete(m);
         if ((machines() ?? []).some((x) => x.name === m && x.layout === "ready")) this.machineRows[m] = row;
         this.compose();
@@ -172,7 +173,7 @@ export default class Usage extends View {
   // The block's height: every row, plus the open ones' limits.
   fit() {
     if (!inLayout()) return;
-    const h = this.services.length ? 6 + this.services.reduce((n, s) => n + ROW + (this.open.has(s.key) ? (s.days ? TABS + (this.period(s).days > 1 ? GRAPH : 0) + Math.max(1, spendIn(s.days, this.period(s).days).models.length) * LIMIT : Math.max(1, s.limits?.length ?? 0) * LIMIT) + 4 : 0), 0) : 0;
+    const h = this.services.length ? 6 + this.services.reduce((n, s) => n + ROW + (this.open.has(s.key) ? (s.days ? TABS + GRAPH + Math.max(1, spendIn(s.days, this.period(s).days).models.length) * LIMIT : Math.max(1, s.limits?.length ?? 0) * LIMIT) + 4 : 0), 0) : 0;
     if (h !== this.height) { this.height = h; run("layout.resize", { id: BLOCK, px: h }); }
   }
 
@@ -189,7 +190,7 @@ export default class Usage extends View {
     return s.limits.find((l) => l.label === this.picked[s.key]) ?? s.limits.reduce((a, b) => (b.used > a.used ? b : a));
   }
 
-  // The tab a Bedrock row is on: the one picked for it, or else the day.
+  // The tab a row billed by use is on: the one picked for it, or else the day.
   period(s) {
     return PERIODS.find((p) => p.label === this.picked[s.key]) ?? PERIODS[PERIODS.length - 1];
   }
@@ -303,14 +304,17 @@ export default class Usage extends View {
               .hover((b) => b.bg(t.hover))
               .on_click((_e, cx) => this.pickPeriod(s.key, x.label, cx))
               .child(x.tab))))
-            // A bar a day, stacked by model; hover one for its numbers. One day needs no chart.
-            .when(p.days > 1, (el) => el.child(h_flex().h(GRAPH).pb(4).gap(1).children(shown.map((d) => {
+            // A bar a day, stacked by model. Always 30 slots, filled from the left, so a bar is
+            // as wide on every tab. The whole of a slot is its hover, however short its bar;
+            // the slots after the last bar show the period's total.
+            .child(h_flex().h(GRAPH).pb(4).children([...shown.map((d) => {
               const day = spendIn([d], 1);
-              return v_flex().id(`day-${s.key}-${d.day}`).flex_1().h_full().justify_end()
+              return v_flex().id(`day-${s.key}-${d.day}`).flex_1().h(GRAPH - 4).pr(1).justify_end().hover((b) => b.bg(t.hover))
                 .tooltip([`${dayName(d.day)}: ${money(day.total)}`, ...day.models.map((x) => `${x.name}: ${money(x.cost)}`)].join("\n"))
                 .when(!day.models.length, (b) => b.child(div().w_full().h(1).flex_none().bg(t.raised)))
                 .children(day.models.map((x) => div().w_full().flex_none().bg(color(x.name)).h(Math.max(1, (x.cost / most) * (GRAPH - 4)))));
-            }))))
+            }), ...Array.from({ length: 30 - shown.length }, (_, i) => div().id(`rest-${s.key}-${i}`).flex_1().h(GRAPH - 4)
+              .tooltip([`Last ${p.label}: ${money(sum.total)}`, ...sum.models.map((x) => `${x.name}: ${money(x.cost)}`)].join("\n")))]))
             .when(!sum.models.length, (el) => el.child(div().h(LIMIT).flex().items_center().text_size(11.5).text_color(t.dim).child("No cost in this period")))
             .children(sum.models.map((x) => h_flex().h(LIMIT).items_center().gap(7).text_size(11.5)
               .child(div().w(7).h(7).flex_none().rounded(4).bg(color(x.name)))

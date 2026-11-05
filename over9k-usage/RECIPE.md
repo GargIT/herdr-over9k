@@ -15,8 +15,8 @@ yellow or red, with when it resets. Hover a service to see every limit.
   - the most-used limit's percentage: `ansi2` (green) under 50, `ansi3` (yellow)
     from 50, `ansi1` (red) from 80
   - the time until it resets, in 11px `dim`
-- **Claude on Amazon Bedrock** has no plan limits (it's paid per use), so its
-  row shows a "Bedrock" badge, one row per computer, and its cost, such as
+- **Claude billed by use** (Amazon Bedrock, Vertex, Foundry, an API key) has no
+  plan limits, so its row shows a badge saying which, one row per computer, and its cost, such as
   "1d $14.20". Open it for tabs (30d, 2w, 1w, 1d; also the row's number) and
   a bar a day stacked by model, with each model's cost as the key. It's estimated from tokens at list prices, not the AWS bill.
 - **Inside the Over9k layout**, the same data is drawn as 28px rows above the
@@ -36,10 +36,10 @@ yellow or red, with when it resets. Hover a service to see every limit.
   - **Claude:** `~/.cache/over9k/usage/claude.json`, `{at, five_hour,
     seven_day}`, plus the plan name from `~/.claude.json`. Claude Code only
     hands its limits to a status line, so this file comes from Over9k's
-    optional one, `claude-statusline.sh`. On Bedrock it holds
-    `{at, "bedrock": true}`. The cost comes from `bedrock-cost.py`, run on that
+    optional one, `claude-statusline.sh`. Billed by use it holds
+    `{at, "api": "Bedrock"}`. The cost comes from `api-cost.py`, run on that
     computer: every transcript's tokens at list prices, once per `requestId`,
-    with parsed files cached in `usage/bedrock-cost-cache.json`.
+    with parsed files cached in `usage/api-cost-cache.json`.
   - **Codex:** its latest session file under `~/.codex/sessions`.
   - **Gemini:** `~/.cache/over9k/usage/antigravity.json`, from Antigravity's
     status line (`agy-statusline.sh` in the Over9k layout: Options › Session footers).

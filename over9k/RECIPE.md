@@ -138,7 +138,7 @@ Left to right. All colours are theme names (`canvas`, `chrome`, `background`,
 - **Usage:** click a row to show every limit as a 3px bar, with its reset time.
   Click a limit to make it that row's headline and list it first; click it again
   for the fullest (`over9k.usageHeadline`, by service; a limit that's gone falls back).
-  A Bedrock row (one per computer) has `bedrock-cost.py`'s cost from the transcripts
+  A row billed by use (one per computer) has `api-cost.py`'s cost from the transcripts
   instead: tabs for 30d, 2w, 1w, 1d (also the row's number) over bars by day, stacked by
   model, and each model's cost for the tab as the chart's key.
   The block resizes to fit.
@@ -223,8 +223,8 @@ Left to right. All colours are theme names (`canvas`, `chrome`, `background`,
   status line. Options › Session footers › Claude Code (off by default) puts in
   `over9k/claude-statusline.sh`, which shows model, effort, context, cache and
   limits under the prompt and saves the limits to
-  `~/.cache/over9k/usage/claude.json` (on Bedrock, each session's cost per day
-  in `usage/bedrock/`). Any status line already there is kept in
+  `~/.cache/over9k/usage/claude.json` (billed by use, `{at, api}`: Bedrock,
+  Vertex, Foundry or API). Any status line already there is kept in
   `~/.claude/.over9k-statusline-was.json` and comes back when it's off. The
   installer never turns it on. Its Antigravity switch (`setup.sh agy on`) does
   the same in `~/.gemini/antigravity-cli/settings.json` with

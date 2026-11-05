@@ -75,15 +75,14 @@ The 5-hour and weekly limits of each plan you use (Claude, Codex and Gemini),
 with the plan's name, the percentage used in green, yellow from 50% or red from
 80%, and how long until it resets. Click a service to see every limit it
 reports, as bars, and click a limit to make it that service's headline instead
-of its fullest. Claude on Amazon Bedrock has no limits, so its row shows cost
-(an estimate from tokens at list prices), one row per computer: click it for
-tabs (30 days, 2 weeks, 1 week, 1 day) and a chart of each day's cost by model.
-The tab you pick is also the row's number. In the layout it sits above the sidebar's footer; on its
+of its fullest. Claude billed by use (Amazon Bedrock, Vertex, Foundry or an API
+key) has no limits, so its row names how it's billed and shows cost (an estimate
+from tokens at list prices), one row per computer: click it for tabs (30 days,
+2 weeks, 1 week, 1 day) and a chart of each day's cost by model. The tab you pick
+is also the row's number. In the layout it sits above the sidebar's footer; on its
 own, it's a single line along the bottom of the window. Codex's numbers come
 from its latest session. Claude's need Over9k's session footer for Claude
-Code, and Gemini's the one for Antigravity (see [Session footers](#session-footers)). Claude on Amazon
-Bedrock has no plan limits, since it's paid per use, so its row shows what
-you've spent today instead, with each session's cost. Hide any you don't use
+Code, and Gemini's the one for Antigravity (see [Session footers](#session-footers)). Hide any you don't use
 in Options.
 
 ### [Switcher](over9k-switcher): Ctrl+Tab between agents
@@ -179,8 +178,8 @@ Some details only reach an agent's session footer, the status line under its
 prompt. For those, **Options › Session footers** adds Over9k's, one switch per
 agent that needs it, each off unless you turn it on:
 
-- **Claude Code:** needed for your 5-hour and weekly limits (on Amazon
-  Bedrock, each session's cost). It shows model and effort, context, how long
+- **Claude Code:** needed for your 5-hour and weekly limits (billed by
+  use, how it's billed, for its cost). It shows model and effort, context, how long
   the prompt cache lasts and those limits. "Show its limits" on the Usage
   strip turns it on too.
 - **Antigravity:** needed for the agent's context and Gemini's limits.

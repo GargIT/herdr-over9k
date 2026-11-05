@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
-# Claude on Amazon Bedrock: what it cost by day and by model, for the Usage rows.
+# Claude billed by use (Amazon Bedrock, Vertex, Foundry, an API key): what it cost by day
+# and by model, for the Usage rows.
 # Claude Code gives a status line one total per session and saves cost by model only
 # when a session ends, so this works it out from the transcripts: each API call's
-# tokens at list prices, the same sum /usage shows. An estimate, not the AWS bill;
-# Claude Code's own background calls aren't in transcripts. Runs on the computer whose
-# Claude it is; prints nothing unless that Claude is on Bedrock (claude.json, saved by
-# Over9k's status line). Parsed files are kept in a cache, so a refresh is cheap.
+# tokens at list prices, the same sum /usage shows. An estimate, not the bill; a cloud's
+# prices can differ, and Claude Code's own background calls aren't in transcripts. Runs on
+# the computer whose Claude it is; prints nothing unless that Claude is billed by use
+# (claude.json, saved by Over9k's status line). Parsed files are kept in a cache, so a
+# refresh is cheap.
 import datetime, json, os, re, sys
 
 DAYS = 30
-VERSION = 1  # Bump when prices change: the cache holds costs.
+VERSION = 2  # Bump when prices change: the cache holds costs.
 # Dollars per million tokens: input, output, cache read. A cache write is 1.25x input
 # for 5 minutes, 2x for an hour.
 PRICES = {
@@ -36,9 +38,11 @@ def cost(name, u):
     c = u.get("cache_creation") or {}
     hour = c.get("ephemeral_1h_input_tokens") or 0
     five = max((u.get("cache_creation_input_tokens") or 0) - hour, 0)
-    return ((u.get("input_tokens") or 0) * p[0] + (u.get("output_tokens") or 0) * p[1]
-            + (u.get("cache_read_input_tokens") or 0) * p[2]
-            + five * p[0] * 1.25 + hour * p[0] * 2) / 1e6
+    # Fast mode (the Claude API only) is twice the price.
+    return (2 if u.get("speed") == "fast" else 1) * (
+        (u.get("input_tokens") or 0) * p[0] + (u.get("output_tokens") or 0) * p[1]
+        + (u.get("cache_read_input_tokens") or 0) * p[2]
+        + five * p[0] * 1.25 + hour * p[0] * 2) / 1e6
 
 
 def read_transcript(path):
@@ -93,11 +97,14 @@ def main():
     usage = os.path.join(home, ".cache", "over9k", "usage")
     try:
         with open(os.path.join(usage, "claude.json")) as f:
-            if not json.load(f).get("bedrock"):
-                return
+            saved = json.load(f)
+        # "bedrock": what status lines from before other kinds of billing wrote.
+        plan = saved.get("api") or ("Bedrock" if saved.get("bedrock") else None)
+        if not plan:
+            return
     except (OSError, ValueError):
         return
-    store = os.path.join(usage, "bedrock-cost-cache.json")
+    store = os.path.join(usage, "api-cost-cache.json")
     try:
         with open(store) as f:
             saved = json.load(f)
@@ -122,7 +129,7 @@ def main():
         os.replace(tmp, store)
     except OSError:
         pass
-    json.dump({"days": [{"day": d, "models": {n: round(c, 6) for n, c in by_day[d].items()}} for d in days]}, sys.stdout)
+    json.dump({"plan": plan, "days": [{"day": d, "models": {n: round(c, 6) for n, c in by_day[d].items()}} for d in days]}, sys.stdout)
 
 
 if __name__ == "__main__":
