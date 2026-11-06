@@ -1890,6 +1890,7 @@ export default class Spaces extends View {
           .child(h_flex().w(FOLD).flex_none().items_center().justify_center()
             .child(svg(`mods/workspace-chrome/chevron-${folded ? "right" : "down"}.svg`).size(10).text_color(t.dim).opacity(this.hoverSpace === key ? 1 : 0)))
           .child(this.tail(g, null, name, t, this.hoverSpace === key && dir))
+          .children(this.closedBot(dir, t, null, key))
           .child(this.plusButton(`loose-add-${name}`, this.hoverSpace === key, t, () => this.openProject(dir))));
       return [row, ...(collapsed || folded ? [] : this.termRows(key, t))];
     });
@@ -1978,6 +1979,7 @@ export default class Spaces extends View {
         .when(Boolean(g?.web) && this.frame.options.github, el => el.child(this.ghLink(g, t)))
         .when(Boolean(g), el => el.children(this.counts(g, t, (cx) => this.showChanges({ name, folder: dir }, cx))))
         .child(this.tail(g, null, name, t, this.hoverSpace === key && dir))
+        .children(this.closedBot(dir, t, m, key))
         .child(this.plusButton(`open-${m ?? ""}-${name}`, this.hoverSpace === key, t, () => this.openProject(dir, m)))
         )(this.git[JSON.stringify([m, dir])]));
   }
@@ -2238,6 +2240,7 @@ export default class Spaces extends View {
           .child(svg(`mods/workspace-chrome/chevron-${folded ? "right" : "down"}.svg`).size(11).flex_none())
           .when(!m, el => el.children(this.serverChips(t)))
           .child(div().flex_1())
+          .children(this.computerBot(m, t))
           .when(connected, el => el.child(h_flex().id(`machine-add-${m ?? "local"}`).size(18).flex_none().items_center().justify_center().rounded(5).cursor_pointer()
             .hover(s => s.bg(t.hover).text_color(t.foreground))
             .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
@@ -2461,6 +2464,7 @@ export default class Spaces extends View {
           .when(Boolean(g), el => el.children(this.counts(g, t, (cx) => this.showChanges({ id: w.id }, cx))))
           .child(this.agentFold(w, t))
           .child(this.tail(g, tree, w.name, t, this.hoverSpace === w.id && w.folder))
+          .children(this.spaceBot(w, t))
           .child(this.addSlot(w, t)),
       );
   }
@@ -2474,6 +2478,48 @@ export default class Spaces extends View {
       .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
       .on_click((_e, cx) => { cx.stop_propagation(); cx.open_url(g.web); })
       .child(svg("mods/over9k/github.svg").size(13));
+  }
+
+  // A device's pinned default (the Pin in over9k-new-menu, shared "over9k.startPin"): a
+  // little bot left of the +, on its heading and, while hovered like the +, on its
+  // spaces', starting that agent there. Nothing without a pin, or while the device
+  // can't be reached.
+  startBot(m, t, start) {
+    const pin = (shared("over9k.startPin") ?? {})[m ?? ""];
+    if (!pin || (m && this.machines.find((k) => k.name === m)?.state !== "connected")) return [];
+    return [h_flex().id(`start-${m ?? ""}`).size(18).flex_none().items_center().justify_center().rounded(5).cursor_pointer().text_color(t.dim)
+      .hover((s) => s.bg(t.hover).text_color(t.foreground))
+      .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
+      .on_click((_e, cx) => { cx.stop_propagation(); start(pin); })
+      .child(svg("mods/over9k/bot.svg").size(13))];
+  }
+
+  // Starts `pin`'s agent in that space, shown; made if there's none yet.
+  startIn(there, made, pin) {
+    if (!there) return run("space.new", { ...made, tab: pin.name, argv: pin.run });
+    if (!there.active) run("space.select", { id: there.id });
+    run("tab.new", { space: there.id, name: pin.name, argv: pin.run });
+  }
+
+  // A computer's: in its home space, where its +'s menu starts things (homeSpace).
+  computerBot(m, t) {
+    return this.startBot(m, t, (pin) => {
+      const { there, made } = this.homeSpace(m);
+      this.startIn(there, { ...made, ...(m ? { machine: m } : {}) }, pin);
+    });
+  }
+
+  spaceBot(w, t) {
+    return this.hoverSpace === w.id ? this.startBot(w.machine ?? null, t, (pin) => this.startIn(w, null, pin)) : [];
+  }
+
+  // A project with no space open (hovered, as `key`): starting one makes its space.
+  closedBot(dir, t, m, key) {
+    if (this.hoverSpace !== key) return [];
+    return this.startBot(m, t, (pin) => {
+      const there = spaces().find((s) => (s.machine ?? null) === m && (s.folder ?? "").replace(/\/+$/, "") === dir);
+      this.startIn(there, { name: this.alias(dir, m), folder: dir, ...(m ? { machine: m } : {}) }, pin);
+    });
   }
 
   // "+", while the pointer is on the row: the new-tab menu (a terminal or any
@@ -2519,15 +2565,20 @@ export default class Spaces extends View {
   // so nothing new lands outside a project or ~. With none yet, the menu makes it
   // with what's picked there (nothing starts on its own).
   addHome(m) {
+    const { there, made } = this.homeSpace(m);
+    if (there && !there.active) run("space.select", { id: there.id });
+    openOverlay({ mod: "over9k-new-menu", kind: "popup", width: 340, height: 640, props: { computer: true, ...made, ...(m ? { machine: m } : {}) } });
+  }
+
+  // A computer's home space (there), or what making it takes (made).
+  homeSpace(m) {
     // This computer's chats start in its Chats folder (over9k-options; home unless set).
     // Another computer's in its own (over9k-options; its home unless set).
     const r = m && this.remote[m];
     const chats = m ? (r?.home ? (r.chats ?? "~").replace(/^~(?=\/|$)/, r.home) : null) : shared("over9k.locations")?.chats ?? homeDir();
     const there = spaces().find((s) => (s.machine ?? null) === m && (m && !chats ? s.name === "~" : (s.folder ?? "").replace(/\/+$/, "") === chats));
     const home = m ? r?.home : homeDir();
-    const made = there ? {} : { folder: chats ?? undefined, name: !chats || chats === home ? "~" : base(chats) };
-    if (there && !there.active) run("space.select", { id: there.id });
-    openOverlay({ mod: "over9k-new-menu", kind: "popup", width: 340, height: 640, props: { computer: true, ...made, ...(m ? { machine: m } : {}) } });
+    return { there, made: there ? {} : { folder: chats ?? undefined, name: !chats || chats === home ? "~" : base(chats) } };
   }
 
   // Projects with no space, under one header, folded until opened.

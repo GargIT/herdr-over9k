@@ -3,7 +3,7 @@
 // rows show, and whether agent rows are compact (one line) or expanded (the
 // name, then its info under it). Saved in shared "sidebar.options" as they
 // change. Help: what Over9k adds. Opened from the sidebar footer
-// (over9k-footer). Esc closes.
+// (over9k-footer). Esc closes. The title bar links to the repo, to star it.
 
 import { View, div, svg, image } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
@@ -78,6 +78,8 @@ const MORE = `{
   done
 } | while read -r d; do [ -d "$d" ] && echo "$d"; done | sort -u`;
 
+// Over9k on GitHub, where the title bar's Star on GitHub goes.
+const REPO = "https://github.com/herunan/herdr-over9k";
 // Each a button on the row: what clicking it does, under its name.
 const SPACE_ITEMS = [
   ["github", "GitHub link", "Opens GitHub"],
@@ -524,6 +526,10 @@ export default class SidebarOptions extends View {
       .child(h_flex().items_center().gap(8)
         .child(div().text_size(15).font_semibold().child(this.setup ? "Set up Over9k" : "Over9k"))
         .child(h_flex().flex_1().gap(2).pl(8).when(!this.setup, (el) => el.child(tab("options", "Options")).child(tab("help", "Help"))))
+        .when(!this.setup, (el) => el.child(h_flex().id("star-github").h(24).px(8).gap(5).flex_none().items_center().rounded(6).cursor_pointer()
+          .text_size(11.5).text_color(t.dim).hover((s) => s.bg(t.hover).text_color(t.foreground))
+          .on_click((_e, cx) => cx.open_url(REPO))
+          .child(svg("mods/over9k-options/star.svg").size(12).flex_none()).child("Star on GitHub")))
         .child(div().text_size(11).text_color(t.dim).child("Esc")))
       // A newer Over9k (not in setup): above Options and Help alike.
       .when(!this.setup && o.checkUpdates && shared("over9k.update")?.behind > 0, (el) => el.child(this.updateCard(t)))

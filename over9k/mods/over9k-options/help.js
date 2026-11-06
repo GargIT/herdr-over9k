@@ -38,11 +38,12 @@ export function helpTopics(view, t) {
     .text_size(11).text_color(strong ? t.foreground : t.dim).child(text);
 
   // The sidebar's rows.
-  const computer = (name, { on = true, chips = [] } = {}) => h_flex().h(31).px(8).gap(7).items_center().text_size(11.5).text_color(t.dim)
+  const computer = (name, { on = true, chips = [], bot = false } = {}) => h_flex().h(31).px(8).gap(7).items_center().text_size(11.5).text_color(t.dim)
     .child(icon(`${CHROME}/${name ? "server" : "monitor"}.svg`, 14, t.dim))
     .child(div().min_w(0).truncate().child(name ?? "This computer"))
     .child(div().size(6).rounded(3).flex_none().bg(on ? t.ansi2 : t.dim))
     .child(chev("down")).children(chips).child(div().flex_1())
+    .when(bot, (el) => el.child(icon("mods/over9k/bot.svg", 13, t.dim)))
     .child(icon(`${CHROME}/plus.svg`, 12));
   const space = (name, color, { active = false, extras = [], tree = false, lit = null } = {}) => h_flex().h(tree ? 28 : 30).px(8).gap(9).items_center().rounded(8)
     .when(active, (el) => el.bg(t.selected)).when(Boolean(lit), (el) => el.bg(lit + "26"))
@@ -155,6 +156,15 @@ export function helpTopics(view, t) {
           line(key("+"), "On This computer, under Add spaces"),
           line(button("Open"), "Opens it now"),
           line(button("Pin"), "Keeps it in the sidebar"),
+        ]),
+      topic("Pin a default agent",
+        side(frame(computer(null, { bot: true }), space("~", null),
+            space("my-app", BLUE, { active: true, extras: [div().flex_1(), icon("mods/over9k/bot.svg", 13, t.dim), icon(`${CHROME}/plus.svg`, 12)] })),
+          menu(menuRow(logo("claude"), "Claude Code", button("Pinned", true)), menuRow(logo("codex"), "Codex", button("Pin")))), [
+          line(icon("mods/over9k/bot.svg", 13), "Starts the pinned agent in one click. On a space's row it shows on hover, like its +"),
+          line(button("Pin"), "In any +, beside an agent: the default for that device and all its spaces. Click again to take it off"),
+          line(key("Model"), "Pi's models each have a Pin too, to start it on that one"),
+          line(key("+"), "Everything else, as always"),
         ]),
       topic("Git",
         view.sample(t, view.spaceSample(t, view.opts())), [

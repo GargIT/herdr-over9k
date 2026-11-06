@@ -80,6 +80,8 @@ All colours are theme names.
 - **The + on a computer** opens the launcher (`over9k-new-menu`): start an agent
   or CLI, resume a session, start Pi on a local model, stop a server, add
   spaces.
+- **Pin an agent in a + (for Pi, a model):** a little bot left of the + starts it
+  in one click, on that device and all its spaces.
 - **Ctrl+Tab** opens `over9k-switcher`, most recent first. This sidebar keeps
   the order.
 - **Options** (the bottom row) covers:

@@ -10,10 +10,12 @@
 // repo up to two levels under home and every folder Claude Code has worked in
 // that isn't on Over9k's list, unpinned ones too. Both list them the same way:
 // open one, pin one, or pin them all).
+// With the sidebar there, each agent has a Pin: it becomes this device's default,
+// started by a little bot left of a + (over9k's startBot).
 
 import { View, div, svg, image } from "gpui-kit";
 import { h_flex, v_flex, InputState, Input } from "gpui-base";
-import { theme, spaces, panes, knownAgents, run, openOverlay, closeOverlay, props, window, keys, exec, home, appHome, shared, setShared, notify, readTextFile, pickFolder } from "herdr";
+import { theme, spaces, panes, knownAgents, run, openOverlay, closeOverlay, props, window, keys, exec, home, appHome, shared, setShared, notify, readTextFile, pickFolder, layout } from "herdr";
 
 // Past sessions of each agent, newest first, as lines of id, when (seconds),
 // title, the folder it ran in, and the model and provider it last used. With a folder ($1): those started there;
@@ -88,6 +90,7 @@ const ownModel = (key, x) => !x.model || (key === "claude" && /^claude-/.test(x.
 // Model families with a logo of their own (as in over9k).
 const FAMILY = [{ match: /qwen/i, icon: "mods/over9k-new-menu/qwen.svg", color: "#6f69f7" }];
 const norm = (url) => (url ?? "").replace(/\/+$/, "");
+const hasMod = (node, mod) => Boolean(node) && (node.content?.mod === mod || (node.children ?? []).some((c) => hasMod(c, mod)));
 // The folder a path is in, short enough to sit beside its name ("…" in front).
 const where = (path) => { const p = path.replace(home(), "~").split("/").slice(0, -1).join("/"); return p.length > 30 ? `\u2026${p.slice(-29)}` : p; };
 
@@ -278,7 +281,7 @@ export default class NewMenu extends View {
   }
   // A menu row; `more`, when given, adds a "Model" button (before the hint) that opens
   // the agent's models (the row itself starts it on its usual one).
-  row(id, icon, name, action, hint = "", enabled = true, more = null) {
+  row(id, icon, name, action, hint = "", enabled = true, more = null, extra = null) {
     const t = theme();
     return h_flex().id(id).h(31).px(9).gap(10).rounded(7).items_center().flex_none()
       .text_color(enabled ? t.foreground : t.dim).when(enabled, el => el.hover(s => s.bg(t.selected)))
@@ -290,7 +293,24 @@ export default class NewMenu extends View {
         .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
         .on_click((_e, cx) => { cx.stop_propagation(); more(); cx.notify(); })
         .child("Model").child(svg("mods/workspace-chrome/chevron-right.svg").size(9))))
+      .when(Boolean(extra), el => el.child(extra))
       .child(div().flex_none().text_size(11).text_color(t.dim).child(hint));
+  }
+
+  // Pin: this agent (and for one that picks a model, m: that model) is this device's
+  // default, for all its spaces, from any of its + menus. Kept in shared
+  // "over9k.startPin" per device with what over9k needs to start it. An agent's own
+  // row says which model is pinned and takes that off too. Only the sidebar shows pins.
+  agentPin(a, m = null) {
+    if (!hasMod(layout(), "over9k")) return null;
+    const device = this.machine ?? "", all = shared("over9k.startPin") ?? {}, was = all[device];
+    const on = was?.key === a.key && (!m || was.model === m.id);
+    const text = !on ? "Pin" : !m && was.modelName ? `Pinned: ${was.modelName}` : "Pinned";
+    return this.button(m ? `model-${a.key}-${m.id}-pin` : `${a.key}-pin`, text, () => {
+      const { [device]: _old, ...rest } = all;
+      const run = m ? ["sh", RESUMER, a.key, "", m.id, m.provider] : a.run;
+      setShared("over9k.startPin", on ? rest : { ...rest, [device]: { key: a.key, name: a.name, run, ...(m ? { model: m.id, modelName: m.name } : {}) } });
+    }, on);
   }
   render(cx) {
     const t = theme();
@@ -328,7 +348,7 @@ export default class NewMenu extends View {
       .child(heading("Start an agent"))
       .child(v_flex().flex_none()
         .children(choices.map((a, i) => this.row(a.key, icon(a), a.name, () => this.start(a.run, a.name), a.installed ? (i < 9 ? String(i + 1) : "") : "not installed", a.installed,
-          a.installed && this.modelsFor(a).length ? () => { this.list = { kind: "models", key: a.key }; } : null)))
+          a.installed && this.modelsFor(a).length ? () => { this.list = { kind: "models", key: a.key }; } : null, this.agentPin(a))))
         .when(this.agents.length === 0, el => el.child(div().px(9).py(6).text_color(t.dim).child(this.failed ? "Could not load agents" : "Checking installed agents…"))))
       .when(resumable.length > 0, el => el
         .child(heading("Resume a session"))
@@ -519,7 +539,7 @@ export default class NewMenu extends View {
     return v_flex().flex_none()
       .child(this.back(`Start ${a.name} on`))
       .children(this.modelsFor(a).map(m => this.row(`model-${a.key}-${m.id}`, badged(icon(), `${m.id} ${m.name}`, t.popover), m.name,
-        () => this.start(["sh", RESUMER, a.key, "", m.id, m.provider], a.name), this.up[m.base] === false ? "starts its server" : "")))
+        () => this.start(["sh", RESUMER, a.key, "", m.id, m.provider], a.name), this.up[m.base] === false ? "starts its server" : "", true, null, this.agentPin(a, m))))
       // Each running local server, to stop (asks first, as the sidebar's chip does).
       .children([...new Map(this.modelsFor(a).filter(m => this.up[m.base]).map(m => [m.base, m])).values()].map(m =>
         this.row(`stop-${m.base}`, svg("mods/over9k-new-menu/stop.svg").size(12).flex_none().text_color(t.dim), `Stop ${m.name}'s server`,

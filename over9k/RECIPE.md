@@ -108,6 +108,8 @@ Left to right. All colours are theme names (`canvas`, `chrome`, `background`,
     Changes, ↑ pushes (click twice), ↓ pulls.
   - The + on a computer opens `over9k-new-menu`: start a CLI or an agent, resume
     a past chat, or start Pi on another model.
+  - Pin an agent in a + (for Pi, a model): a little bot left of the + starts it
+    in one click, on that device and all its spaces.
   - Clicking an agent's chip shows or hides what it started. Clicking a
     subagent opens it, Alt-click opens it in the side panel under an
     `over9k-panel` header, and × stops it.
