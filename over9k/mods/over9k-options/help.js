@@ -163,7 +163,7 @@ export function helpTopics(view, t) {
           menu(menuRow(logo("claude"), "Claude Code", button("Pinned", true)), menuRow(logo("codex"), "Codex", button("Pin")))), [
           line(icon("mods/over9k/bot.svg", 13), "Starts the pinned agent in one click. On a space's row it shows on hover, like its +"),
           line(button("Pin"), "In any +, beside an agent: the default for that device and all its spaces. Click again to take it off"),
-          line(key("Model"), "Pi's models each have a Pin too, to start it on that one"),
+          line(key("Model"), "Pi is pinned by model: each of its models has a Pin here"),
           line(key("+"), "Everything else, as always"),
         ]),
       topic("Git",

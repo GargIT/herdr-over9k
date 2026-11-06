@@ -38,8 +38,8 @@ from the same menu when you're done. The models come from Pi's own list
 (`~/.pi/agent/models.json`), and `over9k-new-menu/servers.json` says how to
 start and stop each one's server.
 
-With the Sidebar, pin the agent you use most from a + menu (for Pi, the model
-too): a little bot appears left of the +, and starts it in one click, on that
+With the Sidebar, pin the agent you use most from a + menu (for Pi, one of its
+models): a little bot appears left of the +, and starts it in one click, on that
 device and all its spaces.
 
 ### [To-do](over9k-todo): agentic to-dos

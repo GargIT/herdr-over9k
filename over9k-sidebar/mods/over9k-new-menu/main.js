@@ -299,17 +299,16 @@ export default class NewMenu extends View {
 
   // Pin: this agent (and for one that picks a model, m: that model) is this device's
   // default, for all its spaces, from any of its + menus. Kept in shared
-  // "over9k.startPin" per device with what over9k needs to start it. An agent's own
-  // row says which model is pinned and takes that off too. Only the sidebar shows pins.
+  // "over9k.startPin" per device with what over9k needs to start it. A simple harness
+  // (Pi) is pinned only by model: its own row has no Pin. Only the sidebar shows pins.
   agentPin(a, m = null) {
-    if (!hasMod(layout(), "over9k")) return null;
+    if (!hasMod(layout(), "over9k") || (!m && SIMPLE.has(a.key))) return null;
     const device = this.machine ?? "", all = shared("over9k.startPin") ?? {}, was = all[device];
     const on = was?.key === a.key && (!m || was.model === m.id);
-    const text = !on ? "Pin" : !m && was.modelName ? `Pinned: ${was.modelName}` : "Pinned";
-    return this.button(m ? `model-${a.key}-${m.id}-pin` : `${a.key}-pin`, text, () => {
+    return this.button(m ? `model-${a.key}-${m.id}-pin` : `${a.key}-pin`, on ? "Pinned" : "Pin", () => {
       const { [device]: _old, ...rest } = all;
       const run = m ? ["sh", RESUMER, a.key, "", m.id, m.provider] : a.run;
-      setShared("over9k.startPin", on ? rest : { ...rest, [device]: { key: a.key, name: a.name, run, ...(m ? { model: m.id, modelName: m.name } : {}) } });
+      setShared("over9k.startPin", on ? rest : { ...rest, [device]: { key: a.key, name: a.name, run, ...(m ? { model: m.id } : {}) } });
     }, on);
   }
   render(cx) {
