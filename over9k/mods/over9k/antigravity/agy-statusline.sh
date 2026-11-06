@@ -36,7 +36,18 @@ printf '%s' "$in" | jq -r '
   | join("   ")' 2>/dev/null
 # The limits and plan for the sidebar's usage section (over9k-usage).
 u="$HOME/.cache/over9k/usage"; mkdir -p "$u"
-printf '%s' "$in" | jq -ce 'select(.quota != null) | {at: (now | floor), plan: .plan_tier, quota}' \
+# Every running agy writes here, some with numbers it saw a while ago, so each limit keeps the newest
+# seen: the later reset, and for the same reset the most used.
+saved=$(jq -c . "$u/antigravity.json" 2>/dev/null); [ -n "$saved" ] || saved={}
+printf '%s' "$in" | jq -ce --argjson saved "$saved" '
+  def newest($old):
+    if $old == null or (.reset_time // "") > ($old.reset_time // "") then .
+    elif (.reset_time // "") < ($old.reset_time // "") then $old
+    elif ($old.remaining_fraction // 1) < (.remaining_fraction // 1) then .remaining_fraction = $old.remaining_fraction
+    else . end;
+  select(.quota != null)
+  | {at: (now | floor), plan: .plan_tier,
+     quota: (.quota | with_entries(.key as $k | .value |= newest($saved.quota[$k])))}' \
   > "$u/antigravity.json.tmp" 2>/dev/null && mv "$u/antigravity.json.tmp" "$u/antigravity.json" || rm -f "$u/antigravity.json.tmp"
 [ -n "$HC_TERMINAL_ID" ] || exit 0
 dir="$HOME/.cache/over9k/agents"; mkdir -p "$dir"
