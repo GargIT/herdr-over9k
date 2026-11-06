@@ -38,6 +38,10 @@ from the same menu when you're done. The models come from Pi's own list
 (`~/.pi/agent/models.json`), and `over9k-new-menu/servers.json` says how to
 start and stop each one's server.
 
+With the Sidebar, pin the agent you use most from a + menu (for Pi, the model
+too): a little bot appears left of the +, and starts it in one click, on that
+device and all its spaces.
+
 ### [To-do](over9k-todo): agentic to-dos
 
 ![Over9k To-do](over9k-todo/preview.png)
@@ -103,6 +107,19 @@ The Over9k layout puts all six in one window, with To-do and Timeline added to
 Herdr's own tab bar. Over9k help & options, at the bottom of the sidebar,
 decides what every row shows, which panels appear and what's set up for your
 agents, and its illustrated Help walks through each part.
+
+### Always up to date, and set up your way
+
+![Over9k updates and options](over9k/previews/updates-options.png)
+
+**Updates come to you.** Installed from a git clone, Over9k checks for a newer
+version every few hours and puts a red Update chip in the sidebar. Open it to see
+every change, then click Update: no restart, and your settings stay.
+
+**You decide what you see.** Choose what space, agent and subagent rows show, in
+one line or two. Turn To-do, Timeline and each Usage service on or off, set your
+folders, and pin the agent you start most. If you like Over9k, **Star on GitHub**
+is right there in Help & options too.
 
 ## Get started
 
