@@ -1284,11 +1284,11 @@ export default class Spaces extends View {
       return lit(h_flex().id(`visit-${k.address}`), (this.hoverLink?.visitor === k.address || this.hoverLink?.parent === k.parent) && { color: c })
         .on_hover((h, cx) => { if (h) this.hoverLink = { color: c, source: k.address }; else if (this.hoverLink?.source === k.address) this.hoverLink = null; cx.notify(); })
         .h(26).flex_none().pl(4 + indent).pr(8).gap(8).items_center().rounded(7)
-        .hover((s) => s.bg(t.hover)).on_mouse_down("left", (e, cx) => this.subClick(e, cx, `k:${k.address}`, () => this.showSub(k.address, false, this.agyTitle(k.address) || k.name || (ka && agentTask(ka, k.cwd)) || appName(ka) || k.program?.name || k.agent, e)))
+        .hover((s) => s.bg(t.hover)).on_mouse_down("left", (e, cx) => this.subClick(e, cx, `k:${k.address}`, () => this.showSub(k.address, false, this.helperTitle(k.address) || k.name || (ka && agentTask(ka, k.cwd)) || appName(ka) || k.program?.name || k.agent, e)))
         .child(h_flex().flex_none().gap(4).items_center()
           .child(h_flex().w(16).flex_none().justify_center().when(Boolean(ka), (el) => el.child(this.mark(ka, t))))
           .child(kind === "process" ? svg(CPU).size(14).flex_none().text_color(t.foreground) : progIcon((ka ?? k).program, t, 14)))
-        .child(h_flex().flex_1().min_w(0).child(div().min_w(0).truncate().line_height("15px").text_size(12.5).text_color(t.muted).child(this.agyTitle(k.address) || k.name || (ka && agentTask(ka, k.cwd)) || appName(ka) || k.program?.name || k.address)))
+        .child(h_flex().flex_1().min_w(0).child(div().min_w(0).truncate().line_height("15px").text_size(12.5).text_color(t.muted).child(this.helperTitle(k.address) || k.name || (ka && agentTask(ka, k.cwd)) || appName(ka) || k.program?.name || k.address)))
         .child(linkChip(t, `visit-chip-${k.address}`, { dir: "in", icon: kind === "process" ? CPU : BOT, color: c }));
     });
   }
@@ -1386,13 +1386,16 @@ export default class Spaces extends View {
     });
   }
 
-  // An Antigravity helper (hc run) goes by the title agy gave it: its --name is a
-  // short handle for hc commands, not something to read. agy-info.py's title, else
-  // the terminal's (its database doesn't always have one), but not agy's placeholder.
-  agyTitle(address) {
+  // A helper (hc run) goes by its `task` label, what the agent that started it wrote
+  // (hc run --label task=...). Without one, an Antigravity helper goes by the title
+  // agy gave it, since its --name is a short handle for hc commands, not something to
+  // read: agy-info.py's title, else the terminal's (its database doesn't always have
+  // one), but not agy's placeholder.
+  helperTitle(address) {
+    const k = (this.frame.terms ?? []).find((x) => x.address === address);
+    if (k?.labels?.task) return k.labels.task;
     const i = this.info[address];
     if (i?.agent !== "antigravity") return null;
-    const k = (this.frame.terms ?? []).find((x) => x.address === address);
     const live = k && agentTask(k, k.cwd);
     return sentenceCase(i.title || (live === APP_NAMES.antigravity ? "" : live));
   }
@@ -1403,7 +1406,7 @@ export default class Spaces extends View {
     const p = this.frame.ps.find((x) => x.terminal === address), a = this.frame.ag.find((x) => x.address === address);
     if (p) { const tab = this.frame.sp.flatMap((s) => s.tabs ?? []).find((tb) => tb.id === p.tab); return a ? agentName(a, tab, p.cwd) : this.termName(p, tab, ""); }
     const k = (this.frame.terms ?? []).find((x) => x.address === address);
-    return this.agyTitle(address) || k?.name || (k && this.frame.ag.some((x) => x.address === address) && agentTask(k, k.cwd)) || appName(k) || address;
+    return this.helperTitle(address) || k?.name || (k && this.frame.ag.some((x) => x.address === address) && agentTask(k, k.cwd)) || appName(k) || address;
   }
 
   // Where a terminal is ssh'd to (findSsh), while it is: the computer's name.
@@ -1504,7 +1507,7 @@ export default class Spaces extends View {
       // An agent in it: Herdr's agents list has it when it has a pane; else its terminal says.
       const ka = this.frame.ag.find((x) => x.address === k.address) ?? (isAgent(k) ? k : null);
       const kind = ka ? "agent" : "process";
-      const name = this.agyTitle(k.address) || k.name || (ka && agentTask(ka, k.cwd)) || appName(ka) || k.program?.name || k.address;
+      const name = this.helperTitle(k.address) || k.name || (ka && agentTask(ka, k.cwd)) || appName(ka) || k.program?.name || k.address;
       // The space it works in, only when that isn't where the agent that started it
       // is (workSpace): then a chip goes there.
       const home = this.workSpace(k.address);

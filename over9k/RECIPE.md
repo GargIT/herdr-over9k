@@ -220,9 +220,10 @@ Left to right. All colours are theme names (`canvas`, `chrome`, `background`,
   each computer with a Claude Code agent. `over9k/agy-info.py` does the same for Antigravity from
   agy's own files (the presence lock its process holds, the conversation's
   `gen_metadata`, `conversation_summaries.db`): model, effort, title, last
-  change. Context only comes from its optional status line. A helper agy runs
-  (`hc run`) is named by that title, in sentence case, ahead of its `--name`,
-  which is only a handle for `hc` commands; any other helper goes by its `--name`.
+  change. Context only comes from its optional status line. A helper
+  (`hc run`) goes by its `task` label, written by the agent that started it. Without
+  one, a helper agy runs goes by that title, in sentence case, ahead of its `--name`,
+  which is only a handle for `hc` commands; any other goes by its `--name`.
 - Claude's plan limits are never in a file; Claude Code only hands them to a
   status line. Options › Session footers › Claude Code (off by default) puts in
   `over9k/claude-statusline.sh`, which shows model, effort, context, cache and
