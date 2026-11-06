@@ -22,6 +22,18 @@ export function codexTitle(title) {
   if (out.model || out.context != null) out.task = clean(rest.join(" | "));
   return out;
 }
+// Antigravity titles its conversations In Title Case; names here read in sentence
+// case. Only a title that's all in that style changes (a plain lowercase word later
+// on, other than a small one like "of", means it isn't), and only plain capitalised
+// words: README, SceneKit, TASK.md and Objective-C stay. A proper noun past the
+// first word ("Mail") loses its capital: nothing here can tell it apart.
+const SMALL = /^(a|an|and|as|at|by|for|from|in|of|on|or|per|the|to|with)$/;
+const CAPITALISED = /^(A|\p{Lu}\p{Ll}+(?:'s)?(?:-\p{L}\p{Ll}+)*[,:;.!?]?)$/u;
+export function sentenceCase(s) {
+  const words = (s ?? "").split(" ");
+  if (words.slice(1).some((w) => /^\p{Ll}+$/u.test(w) && !SMALL.test(w))) return s;
+  return words.map((w, i) => (i && CAPITALISED.test(w) ? w.toLowerCase() : w)).join(" ");
+}
 export function agentTask(a, cwd) {
   if (isCodex(a)) return codexTitle(a.title).task ?? "";
   let live = clean(a.title);
@@ -33,5 +45,5 @@ export function agentTask(a, cwd) {
   // Herdr titles an untitled terminal by its address ("t14f"): no name either.
   if (live === a.address || live === a.address?.split("/").pop()) return "";
   const telling = live && live !== a.program?.name && !/^[~/]/.test(live) && !live.includes("@") && live.toLowerCase() !== a.program?.key;
-  return telling ? live : "";
+  return !telling ? "" : a.app === "antigravity" ? sentenceCase(live) : live;
 }

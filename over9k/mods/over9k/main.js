@@ -14,7 +14,7 @@ import { View, div, image, svg } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
 import { spaces, machines, panes, agents, terminals, setAgentOrder, run, openOverlay, exec, hc, home, appHome, readTextFile, theme, shared, setShared, watchFolder, window, layout, notify, focused, nextCommand } from "herdr";
 import { plan, plural } from "./close-plan.js";
-import { codexTitle, agentTask, isCodex } from "./agent-name.js";
+import { codexTitle, agentTask, isCodex, sentenceCase } from "./agent-name.js";
 
 // Python 3 runs as "python3", else "python" (as on Windows): found once.
 let PY = null;
@@ -694,7 +694,7 @@ export default class Spaces extends View {
         for (const [addr, i] of Object.entries(info)) {
           if (i.agent !== "antigravity" || addr.includes("/")) continue;
           const r = await python(["-I", `${appHome()}/mods/over9k/agy-subagents.py`, addr, i.conversation ?? ""]).catch(() => null);
-          const list = (r?.stdout ?? "").split("\n").filter(Boolean).map((l) => { const [id, at, desc, type, model, start, tokens, effort, window, done] = l.split("\t"); return { id, at: +at, desc, type, model, start: +start || null, tokens: +tokens || 0, effort: effort || null, window: +window || 1048576, done: done === "1" }; });
+          const list = (r?.stdout ?? "").split("\n").filter(Boolean).map((l) => { const [id, at, desc, type, model, start, tokens, effort, window, done] = l.split("\t"); return { id, at: +at, desc: sentenceCase(desc), type, model, start: +start || null, tokens: +tokens || 0, effort: effort || null, window: +window || 1048576, done: done === "1" }; });
           if (list.length) subs[addr] = list.sort((x, y) => y.at - x.at);
         }
         // An ssh from the worktree of a subagent that's finished is the running one
@@ -1284,11 +1284,11 @@ export default class Spaces extends View {
       return lit(h_flex().id(`visit-${k.address}`), (this.hoverLink?.visitor === k.address || this.hoverLink?.parent === k.parent) && { color: c })
         .on_hover((h, cx) => { if (h) this.hoverLink = { color: c, source: k.address }; else if (this.hoverLink?.source === k.address) this.hoverLink = null; cx.notify(); })
         .h(26).flex_none().pl(4 + indent).pr(8).gap(8).items_center().rounded(7)
-        .hover((s) => s.bg(t.hover)).on_mouse_down("left", (e, cx) => this.subClick(e, cx, `k:${k.address}`, () => this.showSub(k.address, false, k.name || (ka && agentTask(ka, k.cwd)) || appName(ka) || k.program?.name || k.agent, e)))
+        .hover((s) => s.bg(t.hover)).on_mouse_down("left", (e, cx) => this.subClick(e, cx, `k:${k.address}`, () => this.showSub(k.address, false, this.agyTitle(k.address) || k.name || (ka && agentTask(ka, k.cwd)) || appName(ka) || k.program?.name || k.agent, e)))
         .child(h_flex().flex_none().gap(4).items_center()
           .child(h_flex().w(16).flex_none().justify_center().when(Boolean(ka), (el) => el.child(this.mark(ka, t))))
           .child(kind === "process" ? svg(CPU).size(14).flex_none().text_color(t.foreground) : progIcon((ka ?? k).program, t, 14)))
-        .child(h_flex().flex_1().min_w(0).child(div().min_w(0).truncate().line_height("15px").text_size(12.5).text_color(t.muted).child(k.name || (ka && agentTask(ka, k.cwd)) || appName(ka) || k.program?.name || k.address)))
+        .child(h_flex().flex_1().min_w(0).child(div().min_w(0).truncate().line_height("15px").text_size(12.5).text_color(t.muted).child(this.agyTitle(k.address) || k.name || (ka && agentTask(ka, k.cwd)) || appName(ka) || k.program?.name || k.address)))
         .child(linkChip(t, `visit-chip-${k.address}`, { dir: "in", icon: kind === "process" ? CPU : BOT, color: c }));
     });
   }
@@ -1386,13 +1386,24 @@ export default class Spaces extends View {
     });
   }
 
+  // An Antigravity helper (hc run) goes by the title agy gave it: its --name is a
+  // short handle for hc commands, not something to read. agy-info.py's title, else
+  // the terminal's (its database doesn't always have one), but not agy's placeholder.
+  agyTitle(address) {
+    const i = this.info[address];
+    if (i?.agent !== "antigravity") return null;
+    const k = (this.frame.terms ?? []).find((x) => x.address === address);
+    const live = k && agentTask(k, k.cwd);
+    return sentenceCase(i.title || (live === APP_NAMES.antigravity ? "" : live));
+  }
+
   // A terminal by the name its row shows: an agent's (agentName), a plain
   // terminal's (termName), else what it was started as.
   nameOf(address) {
     const p = this.frame.ps.find((x) => x.terminal === address), a = this.frame.ag.find((x) => x.address === address);
     if (p) { const tab = this.frame.sp.flatMap((s) => s.tabs ?? []).find((tb) => tb.id === p.tab); return a ? agentName(a, tab, p.cwd) : this.termName(p, tab, ""); }
     const k = (this.frame.terms ?? []).find((x) => x.address === address);
-    return k?.name || (k && this.frame.ag.some((x) => x.address === address) && agentTask(k, k.cwd)) || appName(k) || address;
+    return this.agyTitle(address) || k?.name || (k && this.frame.ag.some((x) => x.address === address) && agentTask(k, k.cwd)) || appName(k) || address;
   }
 
   // Where a terminal is ssh'd to (findSsh), while it is: the computer's name.
@@ -1493,7 +1504,7 @@ export default class Spaces extends View {
       // An agent in it: Herdr's agents list has it when it has a pane; else its terminal says.
       const ka = this.frame.ag.find((x) => x.address === k.address) ?? (isAgent(k) ? k : null);
       const kind = ka ? "agent" : "process";
-      const name = k.name || (ka && agentTask(ka, k.cwd)) || appName(ka) || k.program?.name || k.address;
+      const name = this.agyTitle(k.address) || k.name || (ka && agentTask(ka, k.cwd)) || appName(ka) || k.program?.name || k.address;
       // The space it works in, only when that isn't where the agent that started it
       // is (workSpace): then a chip goes there.
       const home = this.workSpace(k.address);
