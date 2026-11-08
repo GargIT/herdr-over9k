@@ -19,7 +19,9 @@
 //                gemini-* and 3p-* (Claude and GPT) buckets, and the plan.
 //   Codex        the last rate_limits in its newest session file.
 // Each is as fresh as that program's last run; a limit whose reset time has
-// passed shows 0%. Over9k's Options › Usage (shared "sidebar.options": usage,
+// passed shows 0%. Limits belong to the account, not the computer: Claude's and
+// Gemini's come from whichever connected computer saved them last (REMOTE), when
+// it's the same Claude account (accountUuid in ~/.claude.json) or Gemini plan. Over9k's Options › Usage (shared "sidebar.options": usage,
 // usageClaude, usageCodex, usageGemini) hides the section or a service.
 
 import { View, div, svg } from "gpui-kit";
@@ -38,6 +40,9 @@ const ROW = 28, LIMIT = 20, TABS = 26, GRAPH = 72;
 const CODEX = `f=$(ls -t "$HOME"/.codex/sessions/*/*/*/*.jsonl 2>/dev/null | head -n 1); [ -n "$f" ] || exit 0
 grep -o '"rate_limits":{.*' "$f" | tail -n 1 | sed 's/^"rate_limits"://' | jq -c '{plan: .plan_type, primary, secondary}' 2>/dev/null`;
 const CLAUDE_PLAN = `jq -r '.oauthAccount.planDisplayName // empty' "$HOME/.claude.json" 2>/dev/null`;
+const ACCOUNT = `grep -o '"accountUuid": *"[^"]*"' "$HOME/.claude.json" 2>/dev/null | head -n 1 | sed 's/.*"\\([^"]*\\)"$/\\1/'`;
+// Another computer's saved limits and Claude account, a line each (empty when missing).
+const REMOTE = `u="$HOME/.cache/over9k/usage"; tr -d '\\n' 2>/dev/null < "$u/claude.json"; echo; tr -d '\\n' 2>/dev/null < "$u/antigravity.json"; echo; ${ACCOUNT}`;
 
 // Seconds as "3h 54m", "6d 23h", "12m".
 function left(s) {
@@ -89,6 +94,7 @@ export default class Usage extends View {
     this.services = [];
     this.local = [];
     this.machineRows = {};
+    this.remote = {}; // machine -> { claude, agy, account }: its saved limits
     this.fetching = new Set();
     this.open = new Set(shared("over9k.usageOpen") ?? []);
     this.picked = shared("over9k.usageHeadline") ?? {};
@@ -103,28 +109,49 @@ export default class Usage extends View {
   }
 
   async load(cx) {
-    const now = Date.now() / 1000, dir = `${home()}/.cache/over9k/usage`;
+    const dir = `${home()}/.cache/over9k/usage`;
+    const claude = await readJson(`${dir}/claude.json`);
+    const api = claude?.api || claude?.bedrock ? await apiRow(null) : null;
+    const plan = api ? null : (await exec("sh", ["-c", CLAUDE_PLAN]).catch(() => null))?.stdout.trim();
+    const account = (await exec("sh", ["-c", ACCOUNT]).catch(() => null))?.stdout.trim() || null;
+    const codex = await exec("sh", ["-c", CODEX]).then((r) => JSON.parse(r.stdout || "null")).catch(() => null);
+    const agy = await readJson(`${dir}/antigravity.json`);
+    this.mine = { claude, api, plan, account, codex, agy };
+    this.build();
+    this.loadMachines(cx);
+  }
+
+  // The newest of this computer's saved limits and the connected computers' that
+  // count as the same (same(file)): limits are the account's, saved where it last ran.
+  newest(file, key, same) {
+    return Object.values(this.remote).map((r) => r[key]).filter((x) => x && same(x))
+      .reduce((a, b) => ((b.at ?? 0) > (a?.at ?? 0) ? b : a), file);
+  }
+
+  // This computer's rows, from what load() and loadMachines() read.
+  build() {
+    if (!this.mine) return;
+    const now = Date.now() / 1000;
     const out = [];
     // A limit: label, used % (0 once it has reset), seconds to its reset.
     const limit = (label, used, resetsAt) => resetsAt && resetsAt <= now ? { label, used: 0, left: null } : { label, used: Math.max(0, Math.min(100, used ?? 0)), left: resetsAt ? resetsAt - now : null };
 
-    const claude = await readJson(`${dir}/claude.json`);
-    if (claude?.api || claude?.bedrock) {
-      const row = await apiRow(null);
-      if (row) out.push(row);
-    } else if (claude) {
-      const plan = (await exec("sh", ["-c", CLAUDE_PLAN]).catch(() => null))?.stdout.trim();
-      out.push({ key: "claude", name: "Claude", plan: planName(plan), limits: [
+    const { api, plan, account, codex } = this.mine;
+    if (api) out.push(api);
+    else {
+      const sub = (x) => !x.api && !x.bedrock && (x.five_hour || x.seven_day);
+      const mine = this.mine.claude && sub(this.mine.claude) ? this.mine.claude : null;
+      const claude = account ? this.newest(mine, "claude", (x) => sub(x) && x.account === account) : mine;
+      if (claude) out.push({ key: "claude", name: "Claude", plan: planName(plan), limits: [
         claude.five_hour && limit("5h", claude.five_hour.used_percentage, claude.five_hour.resets_at),
         claude.seven_day && limit("7d", claude.seven_day.used_percentage, claude.seven_day.resets_at),
       ].filter(Boolean) });
     }
-    const codex = await exec("sh", ["-c", CODEX]).then((r) => JSON.parse(r.stdout || "null")).catch(() => null);
     if (codex) {
       out.push({ key: "codex", name: "Codex", plan: planName(codex.plan), limits: [codex.primary, codex.secondary].filter(Boolean)
         .map((w) => limit(windowName(w.window_minutes), w.used_percent, w.resets_at)) });
     }
-    const agy = await readJson(`${dir}/antigravity.json`);
+    const agy = this.newest(this.mine.agy?.quota ? this.mine.agy : null, "agy", (x) => x.quota && (!this.mine.agy?.plan || x.plan === this.mine.agy.plan));
     if (agy?.quota) {
       const q = agy.quota, at = agy.at ?? now;
       const b = (key, label) => q[key] && limit(label, (1 - (q[key].remaining_fraction ?? 1)) * 100, q[key].reset_in_seconds != null ? at + q[key].reset_in_seconds : null);
@@ -134,21 +161,28 @@ export default class Usage extends View {
     }
     this.local = out;
     this.compose();
-    this.loadMachines(cx);
   }
 
   // Other machines answer on their own time: one that hangs holds up only its row.
   loadMachines(cx) {
     const ready = (machines() ?? []).filter((m) => m.name && m.layout === "ready").map((m) => m.name);
     for (const m of Object.keys(this.machineRows)) if (!ready.includes(m)) delete this.machineRows[m];
+    for (const m of Object.keys(this.remote)) if (!ready.includes(m)) delete this.remote[m];
     for (const m of ready) {
       if (this.fetching.has(m)) continue;
       this.fetching.add(m);
       cx.spawn(async (cx) => {
-        const row = await apiRow(m);
+        const r = await exec("sh", ["-c", REMOTE], { on: m }).catch(() => null);
+        const [c, g, account] = (r?.stdout ?? "").split("\n");
+        const json = (t) => { try { return t ? JSON.parse(t) : null; } catch { return null; } };
+        const claude = json(c);
+        const row = claude?.api || claude?.bedrock ? await apiRow(m) : null;
         this.fetching.delete(m);
-        if ((machines() ?? []).some((x) => x.name === m && x.layout === "ready")) this.machineRows[m] = row;
-        this.compose();
+        if ((machines() ?? []).some((x) => x.name === m && x.layout === "ready")) {
+          this.machineRows[m] = row;
+          this.remote[m] = { claude: claude && { ...claude, account: account?.trim() || null }, agy: json(g) };
+        }
+        this.build();
         cx.notify();
       });
     }
