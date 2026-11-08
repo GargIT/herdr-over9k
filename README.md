@@ -15,7 +15,7 @@ parts you want to your own.
 
 Every project and every agent working in it, in one list. Point it at your code
 folder and each repo shows up on its own, with its branch, uncommitted files,
-pull requests and push/pull; pin the projects you care about and park the rest.
+pull requests, open issues, stars and push/pull; pin the projects you care about and park the rest.
 Every agent shows whether it's working or needs you, its model, how full its
 context is and how long since it replied, with the subagents, background
 commands and scheduled prompts it started underneath. Links show where the work
@@ -240,7 +240,8 @@ reaches the network through your own tools, in three ways:
 - **git:** every 5 minutes it fetches each project with a GitHub remote, to show
   how far ahead or behind it is. It pushes and pulls only when you click.
 - **gh:** in the same pass, if `gh` is installed, it counts open pull requests
-  and checks whether your review is wanted.
+  and checks whether your review is wanted, and on your own repos counts open
+  issues and stars.
 - **curl:** the + menu checks whether the local model servers in Pi's list are
   up.
 

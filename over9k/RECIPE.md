@@ -31,10 +31,11 @@ Left to right. All colours are theme names (`canvas`, `chrome`, `background`,
       picked one on `raised`.
     - Each computer's header: "This computer", or a machine's name, with a
       monitor or server icon, a green connection dot, a fold chevron and a +.
-    - Each project as a 30px row, its name in its own colour, then up to four
+    - Each project as a 30px row, its name in its own colour, then its
       badges: a GitHub mark, the uncommitted count (`ansi3`), ↑ ahead
-      (`ansi2`) and ↓ behind (`ansi1`), and open pull requests (a PR icon and
-      a count, red when your review is wanted).
+      (`ansi2`) and ↓ behind (`ansi1`), open pull requests (a PR icon and
+      a count, red when your review is wanted), and on your own repos open
+      issues and stars (an icon and a count each).
     - The open space is on `selected`, and worktrees sit under their checkout
       with a branch icon.
     - Under each project, its agents. Each has a status mark, the program's

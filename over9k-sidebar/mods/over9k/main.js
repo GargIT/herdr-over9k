@@ -235,7 +235,7 @@ const dotted = (parts) => parts.flatMap((el, n) => (n ? [div().px(1).child("\u00
 
 // Agent rows' layout and what they show, until over9k-options says otherwise
 // (shared "sidebar.options"; the same defaults as there).
-const OPTIONS = { keepUpToDate: false, layout: "expanded", model: true, effort: true, context: true, since: true, cache: true, github: true, dirty: true, sync: true, prs: true,
+const OPTIONS = { keepUpToDate: false, layout: "expanded", model: true, effort: true, context: true, since: true, cache: true, github: true, dirty: true, sync: true, prs: true, stars: true, issues: true,
   subModel: true, subEffort: true, subContext: true, subTime: true };
 
 // Model families with a logo of their own, a badge on the agent's icon.
@@ -350,6 +350,7 @@ export default class Spaces extends View {
     this.loadInfo(cx);
     this.prs = {}; // "owner/repo" -> { open, review }: open pull requests, those asking you
     this.write = {}; // "owner/repo" -> you can push there (yours, or your team's)
+    this.repoInfo = {}; // "owner/repo" -> { stars, issues }: its stars and open issues on GitHub
     this.me = null; // your GitHub login
     this.armed = null; // ↑ clicked once: { repo, until }; a second click pushes
     this.sel = new Set(); // Ctrl+clicked rows: "s:<space>", "p:<pane>", "d:<project folder>"
@@ -2282,8 +2283,10 @@ export default class Spaces extends View {
 
   // Next to the name (after its GitHub icon), each a button: uncommitted files
   // (shows Changes), commits not pushed (push, on a second click), commits to
-  // pull (pull, fast-forward only), open pull requests (opens them on GitHub).
-  // Each kind only when over9k-options shows it (dirty, sync, prs).
+  // pull (pull, fast-forward only), open pull requests, open issues and stars
+  // (each opens its page on GitHub; issues and stars only on a repo you can
+  // push to, not one you only cloned). Each kind only when over9k-options shows
+  // it (dirty, sync, prs, issues, stars).
   counts(g, t, show) {
     const out = [], o = this.frame.options;
     if (o.dirty && g.dirty > 0) out.push(this.action(div().id(`dirty-${g.repo}`).text_color(t.ansi3), g, t,
@@ -2302,6 +2305,13 @@ export default class Spaces extends View {
     if (o.prs && pr?.open) out.push(this.action(h_flex().id(`pr-${g.repo}`).gap(2).items_center().text_color(pr.review ? t.blocked : t.dim), g, t,
       pr.review ? `${plural(pr.open, "pull request")}, ${pr.review} needs your review` : `Open ${plural(pr.open, "pull request")}`,
       (cx) => cx.open_url(`${g.web}/pulls`)).child(svg("mods/over9k/pull-request.svg").size(11)).child(String(pr.open)));
+    const info = g.slug && this.write[g.slug] && this.repoInfo[g.slug];
+    if (o.issues && info?.issues) out.push(this.action(h_flex().id(`issues-${g.repo}`).gap(2).items_center().text_color(t.dim), g, t,
+      `Open ${plural(info.issues, "issue")}`, (cx) => cx.open_url(`${g.web}/issues`))
+      .child(svg("mods/over9k/issue.svg").size(11)).child(String(info.issues)));
+    if (o.stars && info?.stars) out.push(this.action(h_flex().id(`stars-${g.repo}`).gap(2).items_center().text_color(t.dim), g, t,
+      `${plural(info.stars, "star")} on GitHub`, (cx) => cx.open_url(`${g.web}/stargazers`))
+      .child(svg("mods/over9k/star.svg").size(11)).child(String(info.stars)));
     return out.length ? [h_flex().flex_none().gap(3).items_center().text_size(11.5).children(out)] : [];
   }
 
@@ -2362,7 +2372,8 @@ export default class Spaces extends View {
     wait(cx);
   }
 
-  // Each GitHub repo in the list, one after another: fetch, then count its open PRs.
+  // Each GitHub repo in the list, one after another: fetch, then count its open
+  // PRs, open issues and stars.
   refreshRemote(cx) {
     if (this.remoteBusy) return;
     this.remoteBusy = true;
@@ -2377,9 +2388,12 @@ export default class Spaces extends View {
           const on = JSON.parse(k)[0];
           if (on && !this.machines.some((x) => x.name === on && x.state === "connected")) continue;
           await exec("env", [...QUIET, "git", "fetch", "--quiet"], { cwd: g.top, on: on ?? undefined });
-          if (!(g.slug in this.write)) {
-            const v = await exec("gh", ["repo", "view", g.slug, "--json", "viewerPermission", "--jq", ".viewerPermission"]);
-            if (v.code === 0) this.write[g.slug] = ["ADMIN", "MAINTAIN", "WRITE"].includes(v.stdout.trim());
+          const v = await exec("gh", ["repo", "view", g.slug, "--json", "viewerPermission,stargazerCount,issues",
+            "--jq", "[.viewerPermission, .stargazerCount, .issues.totalCount] | @tsv"]);
+          if (v.code === 0) {
+            const [perm, stars, issues] = v.stdout.trim().split("\t");
+            this.write[g.slug] = ["ADMIN", "MAINTAIN", "WRITE"].includes(perm);
+            this.repoInfo[g.slug] = { stars: Number(stars) || 0, issues: Number(issues) || 0 };
           }
           const r = await exec("gh", ["pr", "list", "--repo", g.slug, "--state", "open", "--limit", "100", "--json", "number,reviewRequests,author"]);
           if (r.code === 0) {

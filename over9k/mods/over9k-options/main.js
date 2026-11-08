@@ -11,7 +11,7 @@ import { FolderPick } from "./folder-pick.js";
 import { helpTopics } from "./help.js";
 import { props, closeOverlay, openOverlay, theme, shared, setShared, home, appHome, pickFolder, exec, machines, readTextFile, notify } from "herdr";
 
-export const DEFAULTS = { keepUpToDate: false, handoffRule: false, todos: true, todoLog: true, todoSync: false, timeline: true, claudeStatus: false, agyStatus: false, todoFile: false, layout: "expanded", model: true, effort: true, context: true, since: true, cache: true, github: true, dirty: true, sync: true, prs: true,
+export const DEFAULTS = { keepUpToDate: false, handoffRule: false, todos: true, todoLog: true, todoSync: false, timeline: true, claudeStatus: false, agyStatus: false, todoFile: false, layout: "expanded", model: true, effort: true, context: true, since: true, cache: true, github: true, dirty: true, sync: true, prs: true, stars: true, issues: true,
   subModel: true, subEffort: true, subContext: true, subTime: true,
   usage: true, usageClaude: true, usageCodex: true, usageGemini: true, checkUpdates: true };
 // The To-do panel (over9k-todos) and the `todo` command agents use.
@@ -80,12 +80,17 @@ const MORE = `{
 
 // Over9k on GitHub, where the title bar's Star on GitHub goes.
 const REPO = "https://github.com/herunan/herdr-over9k";
-// Each a button on the row: what clicking it does, under its name.
+// Each a button on the row: what clicking it does, under its name. Git's from
+// the repo itself; GitHub's from GitHub (gh), every 5 minutes.
 const SPACE_ITEMS = [
-  ["github", "GitHub link", "Opens GitHub"],
   ["dirty", "Uncommitted files", "Opens Changes"],
   ["sync", "Commits to push or pull", "Click to push (twice) or pull"],
+];
+const GITHUB_ITEMS = [
+  ["github", "GitHub link", "Opens the repo"],
   ["prs", "Pull requests", "Red if your review is wanted"],
+  ["issues", "Open issues", "On your repos; opens them"],
+  ["stars", "Stars", "On your repos; opens who starred it"],
 ];
 
 export default class SidebarOptions extends View {
@@ -278,7 +283,10 @@ export default class SidebarOptions extends View {
     if (this.page === "spaces") return page
       .child(group("Space rows", "Shown next to the name. All clickable.", true))
       .child(this.sample(t, this.spaceSample(t, o)))
-      .children(SPACE_ITEMS.map(check));
+      .child(group("Git", "From the repo on this computer.", false))
+      .children(SPACE_ITEMS.map(check))
+      .child(group("GitHub", "For repos on GitHub. Counts need gh, signed in; checked every 5 minutes.", false))
+      .children(GITHUB_ITEMS.map(check));
     if (this.page === "agents") return page
       .child(group("Agent rows", "Compact: one line. Expanded: details below the name (always, in Agents \u203a Status).", true))
       .child(h_flex().gap(8).pb(8)
@@ -357,7 +365,9 @@ export default class SidebarOptions extends View {
               this.armed ? "Click again to push" : "Push 2 commits",
               () => { this.armed = !this.armed; return this.armed ? "Click again to push" : "Pushed 2 commits"; }))
             .child(this.part(t, "behind", div().px(2).text_color(t.ansi1).child("\u21931"), "Pull 1 new commit")))
-          .when(o.prs, (el) => el.child(this.part(t, "prs", h_flex().px(2).gap(2).items_center().text_color(t.dim).child(svg("mods/over9k/pull-request.svg").size(11)).child("3"), "Open 3 pull requests"))))
+          .when(o.prs, (el) => el.child(this.part(t, "prs", h_flex().px(2).gap(2).items_center().text_color(t.dim).child(svg("mods/over9k/pull-request.svg").size(11)).child("3"), "Open 3 pull requests")))
+          .when(o.issues, (el) => el.child(this.part(t, "issues", h_flex().px(2).gap(2).items_center().text_color(t.dim).child(svg("mods/over9k/issue.svg").size(11)).child("2"), "Open 2 issues")))
+          .when(o.stars, (el) => el.child(this.part(t, "stars", h_flex().px(2).gap(2).items_center().text_color(t.dim).child(svg("mods/over9k/star.svg").size(11)).child("8"), "8 stars on GitHub"))))
         // As there: the fold chevron and (FOLD), the hover text or folder, the + (ADD).
         .child(h_flex().w(16).flex_none().items_center().justify_center().text_color(t.dim)
           .child(svg("mods/workspace-chrome/chevron-down.svg").size(10).opacity(on ? 1 : 0)))

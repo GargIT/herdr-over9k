@@ -28,6 +28,7 @@ All colours are theme names.
   - uncommitted files (`ansi3`)
   - ↑ ahead (`ansi2`) and ↓ behind (`ansi1`)
   - open pull requests (red when your review is wanted)
+  - on your own repos, open issues and stars
 
   Worktrees sit under their checkout with a branch icon.
 - **Agent rows**, 26px (compact) or 36px (expanded):
@@ -70,7 +71,7 @@ All colours are theme names.
   - The GitHub mark opens the repo.
   - The uncommitted count opens Changes.
   - ↑ pushes (click twice). ↓ pulls (`--ff-only`).
-  - Every 5 minutes it runs `git fetch`, and `gh` counts pull requests.
+  - Every 5 minutes it runs `git fetch`, and `gh` counts pull requests, issues and stars.
 - **What an agent started:** click its chip to show or hide the list. Click a
   subagent to view it, Alt-click to view it in the side panel, × to stop it.
 - **clear + recap** sends `/clear` with a recap brief, so the agent restarts
