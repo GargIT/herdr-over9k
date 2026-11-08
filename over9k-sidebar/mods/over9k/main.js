@@ -1981,7 +1981,7 @@ export default class Spaces extends View {
           // Its space, made once: a second double-click shows the one there.
           this.sel.clear();
           const there = spaces().find((s) => (s.machine ?? null) === m && (s.folder ?? "").replace(/\/+$/, "") === dir);
-          return there ? run("space.select", { id: there.id }) : run("space.new", { name, folder: dir, ...(m ? { machine: m } : {}) });
+          return there ? run("space.select", { id: there.id }) : run("space.new", { name, folder: dir, machine: m ?? "" });
         }
         this.sel = new Set([key]);
         this.anchor = key;
@@ -2362,11 +2362,11 @@ export default class Spaces extends View {
   // The panel waits until the space is in front: the tab bar restores each space's
   // own panel when it switches, which would hide one shown before.
   showChanges(target, cx) {
-    const there = () => spaces().find((s) => s.active && (target.id ? s.id === target.id : s.folder.replace(/\/+$/, "") === target.folder));
+    const there = () => spaces().find((s) => s.active && (target.id ? s.id === target.id : !s.machine && s.folder.replace(/\/+$/, "") === target.folder));
     const show = () => { run("layout.select", { stack: "panel-body", child: "changes" }); run("layout.show", { id: "panel" }); };
     if (there()) return show();
     if (target.id) run("space.select", { id: target.id });
-    else run("space.new", target);
+    else run("space.new", { machine: "", ...target });
     let tries = 0;
     const wait = (cx) => cx.timer.after(50, (cx) => (there() ? cx.timer.after(150, () => show()) : ++tries < 60 && wait(cx)));
     wait(cx);
@@ -2524,7 +2524,7 @@ export default class Spaces extends View {
 
   // Starts `pin`'s agent in that space, shown; made if there's none yet.
   startIn(there, made, pin) {
-    if (!there) return run("space.new", { ...made, tab: pin.name, argv: pin.run });
+    if (!there) return run("space.new", { machine: "", ...made, tab: pin.name, argv: pin.run });
     if (!there.active) run("space.select", { id: there.id });
     run("tab.new", { space: there.id, name: pin.name, argv: pin.run });
   }
@@ -2691,7 +2691,7 @@ export default class Spaces extends View {
     return v_flex().size_full().min_h(0).bg(t.chrome).text_size(13)
       .when(!collapsed, (el) => el.child(this.filterBar(t)))
       .when(Boolean(none), (el) => el.child(div().px(16).py(6).text_size(12).text_color(t.dim).child(FILTERS.find((f) => f.id === this.filter)?.empty ?? "")))
-      .child(v_flex().flex_1().min_h(0).px(8).pb(14).overflow_y_scrollbar().mode("always")
+      .child(v_flex().id("spaces-scroll").flex_1().min_h(0).px(8).pb(14).overflow_y_scrollbar().mode("always")
         .on_mouse_up("left", (_e, cx) => { this.pressed = null; cx.notify(); })
         .children(list))
       // On its own (no Over9k footer in this window): its help and options here.

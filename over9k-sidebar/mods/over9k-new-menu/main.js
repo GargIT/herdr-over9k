@@ -99,7 +99,7 @@ const where = (path) => { const p = path.replace(home(), "~").split("/").slice(0
 // there's none; with `tab` ({name?, argv?}) the program starts in a new tab there.
 function openFolder(folder, name, tab, machine = null) {
   const there = spaces().find(s => (s.machine ?? null) === machine && norm(s.folder) === norm(folder));
-  if (!there) return run("space.new", { name, folder, ...(machine ? { machine } : {}), ...(tab?.argv ? { tab: tab.name, argv: tab.argv } : {}) });
+  if (!there) return run("space.new", { name, folder, machine: machine ?? "", ...(tab?.argv ? { tab: tab.name, argv: tab.argv } : {}) });
   if (!there.active) run("space.select", { id: there.id });
   if (tab) run("tab.new", { space: there.id, folder, ...(tab.argv ? { name: tab.name, argv: tab.argv } : {}) });
 }
@@ -277,7 +277,7 @@ export default class NewMenu extends View {
     if (there) {
       if (!there.active) run("space.select", { id: there.id });
       run("tab.new", { space: there.id, folder: x.cwd, argv });
-    } else run("space.new", { ...(m ? { machine: m } : {}), ...(!m && x.cwd === home() ? {} : { name: names[x.cwd] || x.cwd.split("/").pop() }), folder: x.cwd, argv });
+    } else run("space.new", { machine: m ?? "", ...(!m && x.cwd === home() ? {} : { name: names[x.cwd] || x.cwd.split("/").pop() }), folder: x.cwd, argv });
   }
   // A menu row; `more`, when given, adds a "Model" button (before the hint) that opens
   // the agent's models (the row itself starts it on its usual one).
@@ -479,7 +479,7 @@ export default class NewMenu extends View {
       .when(b.subs === null, (el) => el.child(div().px(9).py(6).text_color(t.dim).child("Looking\u2026")))
       .when(b.subs !== null && !b.full, (el) => el.child(div().px(9).py(6).text_color(t.dim).child("Not a folder")))
       .when(subs.length > 0, (el) => el.child(this.listHead("add-pin-all", `${subs.length} folder${subs.length === 1 ? "" : "s"} in it`, subs)))
-      .child(v_flex().flex_none().h(Math.min(subs.length, 12) * 31).overflow_y_scrollbar()
+      .child(v_flex().id(`add-list-${b.dir}`).flex_none().h(Math.min(subs.length, 12) * 31).overflow_y_scrollbar()
         .children(subs.map((d) => this.folderRow(`add-${d}`, d, true))));
   }
 
@@ -491,7 +491,7 @@ export default class NewMenu extends View {
       .when(found === null, el => el.child(div().px(9).py(6).text_color(t.dim).child("Scanning\u2026")))
       .when(found?.length === 0, el => el.child(div().px(9).py(6).text_color(t.dim).child("They're all listed already")))
       .when(found?.length > 0, el => el.child(this.listHead("scan-pin-all", `${dirs.length} folder${dirs.length === 1 ? "" : "s"} not listed`, dirs)))
-      .child(v_flex().flex_none().h(Math.min(dirs.length, 15) * 31).overflow_y_scrollbar()
+      .child(v_flex().id("scan-list").flex_none().h(Math.min(dirs.length, 15) * 31).overflow_y_scrollbar()
         .children(dirs.map((d) => this.folderRow(`scan-${d}`, d))));
   }
 
@@ -551,7 +551,7 @@ export default class NewMenu extends View {
     const t = theme(), h = home(), list = this.sessions[a.key] ?? [];
     return v_flex().flex_none()
       .child(this.back(`Resume a ${a.name} session`))
-      .child(v_flex().flex_none().h(Math.min(list.length, 16) * 31).overflow_y_scrollbar()
+      .child(v_flex().id(`sessions-${a.key}`).flex_none().h(Math.min(list.length, 16) * 31).overflow_y_scrollbar()
         .children(list.map((x) => this.row(`resume-${a.key}-${x.id}`, badged(icon(), x.model, t.popover), x.title, () => this.resume(a.key, x),
           [computer && (x.cwd === h ? "~" : x.cwd.split("/").pop()), !ownModel(a.key, x) && x.model, ago(x.when)].filter(Boolean).join(" \u00b7 ")))));
   }
