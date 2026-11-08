@@ -6,6 +6,8 @@
 // "<!-- due: 2026-11-04 15:00 -->" (or a date alone) and "<!-- done: 2026-11-03 -->"
 // after the text. The `todo` command (todo.sh) reads and writes the same files,
 // so what an agent adds shows here at once (watchFolder), and back.
+// In a space on another computer, the project you're in is that computer's: its
+// list, TODO.md and new agents are there (read every 5s; HERE, loadThere).
 // Shown: today's date; a chip per project with open to-dos (its colour, as the
 // sidebar's: a hash of its folder's name) and "All"; one list, the project
 // you're in first, then by due time; each to-do with its project and when it's
@@ -52,9 +54,32 @@ let dataDir = null;
 const DIR = () => dataDir ?? `${home()}/${DATA_DIR}`;
 // Crosses a to-do out of (or back into) a project's own TODO.md.
 const CROSS = () => `${appHome()}/mods/over9k-todos/todo-cross.py`;
+// The project you're in when its space is on another computer: its list, its
+// TODO.md and its agents are that computer's (findHere sets it).
+const HERE = { folder: null, machine: null };
+const mOf = (folder) => (folder && folder === HERE.folder ? HERE.machine : null);
+const onM = (m) => (m ? { on: m } : {});
+// A list there is keyed "@<machine>:<slug>"; this computer's by its slug alone.
+const keyOf = (folder) => (mOf(folder) ? `@${mOf(folder)}:${slugOf(folder)}` : slugOf(folder));
+const machineOf = (key) => (key.startsWith("@") ? key.slice(1, key.indexOf(":")) : null);
+// There, the list is read and written with sh (todo.sh's folder): a write only
+// when the file still holds what was read ($3; $4 set: it was there), else 3.
+const THERE_DIR = 'd="${XDG_DATA_HOME:-$HOME/.local/share}/over9k/todos"';
+const THERE_READ = `${THERE_DIR}; cat "$d/$1.md" 2>/dev/null`;
+const THERE_WRITE = `${THERE_DIR}; f="$d/$1.md"; mkdir -p "$d" || exit 1
+if [ -e "$f" ]; then [ "$(cat "$f")" = "$(printf %s "$3")" ] || exit 3; elif [ -n "$4" ]; then exit 3; fi
+printf %s "$2" > "$f.tmp" && mv "$f.tmp" "$f"`;
+// todo-cross.py on the computer the folder is on (there: its text, run with -c).
+let crossText = null;
+const cross = async (folder, ...args) => {
+  const m = mOf(folder);
+  if (!m) return python(["-I", CROSS(), folder, ...args]).catch(() => null);
+  crossText ??= await readTextFile(CROSS()).catch(() => null);
+  if (!crossText) return null;
+  return exec("python3", ["-I", "-c", crossText, folder, ...args], onM(m)).catch(() => null);
+};
 // Sync on: what's added, edited or deleted here goes into the project's TODO.md too.
-const toFile = (folder, ...args) => (SYNCED.has(folder)
-  ? python(["-I", CROSS(), folder, ...args]).catch(() => null) : null);
+const toFile = (folder, ...args) => (SYNCED.has(folder) ? cross(folder, ...args) : null);
 // Each project's switches, kept in its list file ("<!-- log: off -->",
 // "<!-- sync: on -->"; `todo log|sync on|off` writes the same): Log, whether
 // agents add what's asked for (on unless off); Sync, whether the project's
@@ -427,6 +452,8 @@ export default class Todos extends View {
       }
     });
     cx.timer.every(1000, (cx) => this.findHere(cx));
+    // A list on another computer can't be watched: read again every 5s.
+    cx.timer.every(5000, (cx) => { if (HERE.machine) cx.spawn(async (cx) => this.loadThere(cx)); });
     cx.timer.every(15000, (cx) => { this.checkRule(cx); cx.notify(); }); // "today", overdue, TODO.md re-read, the rule
     this.ruleOk = true; // agents have the to-do rule (CLAUDE.md); off: a hint offers to set it up
     this.checkRule(cx);
@@ -452,9 +479,28 @@ export default class Todos extends View {
     // A list that changed: its TODO.md is read again before suggesting from it
     // (an agent's edit reaches TODO.md a moment after the list).
     for (const [slug, l] of Object.entries(lists)) if (this.lists?.[slug]?.raw !== l.raw) { this.fileAt[l.folder] = 0; this.fileStale[l.folder] = true; }
+    for (const [k, l] of Object.entries(this.lists ?? {})) if (l.machine) lists[k] = l;
     this.lists = lists;
     SYNCED.clear();
     for (const l of Object.values(lists)) if (l.opts.sync) SYNCED.add(l.folder);
+    cx.notify();
+  }
+
+  // The list of the project you're in, when that's on another computer (the
+  // only one read from there); any other computer's is dropped.
+  async loadThere(cx) {
+    const m = HERE.machine, folder = HERE.folder, key = m && keyOf(folder);
+    const raw = m ? (await exec("sh", ["-c", THERE_READ, "sh", slugOf(folder)], onM(m)).catch(() => null))?.stdout || null : null;
+    if (m !== HERE.machine || folder !== HERE.folder) return; // moved on meanwhile
+    for (const k of Object.keys(this.lists)) if (this.lists[k].machine && k !== key) delete this.lists[k];
+    const was = key && this.lists[key];
+    if (!key || raw === (was?.raw ?? null)) return cx.notify();
+    const p = raw && parse(raw);
+    if (p?.folder) {
+      this.lists[key] = { ...p, raw, machine: m };
+      this.fileAt[p.folder] = 0; this.fileStale[p.folder] = true;
+      if (p.opts.sync) SYNCED.add(p.folder); else SYNCED.delete(p.folder);
+    } else delete this.lists[key];
     cx.notify();
   }
 
@@ -462,7 +508,7 @@ export default class Todos extends View {
   // space's), as a repo's main checkout (worktrees share it), as `todo` decides.
   // A project's Log or Sync switch (its list file is made if there's none).
   setOpt(folder, key, on, cx) {
-    const slug = slugOf(folder), l = this.lists[slug];
+    const slug = keyOf(folder), l = this.lists[slug];
     cx.spawn(async (cx) => this.write(slug, folder, l?.items ?? [], cx, l?.skipped ?? [], { ...(l?.opts ?? defOpts()), [key]: on, set: { ...(l?.opts?.set ?? {}), [key]: true } }));
   }
 
@@ -491,14 +537,24 @@ export default class Todos extends View {
   findHere(cx) {
     const f = focused(), s = spaces().find((x) => x.active);
     if (f?.agent || (f?.terminal && agents().some((a) => a.address === f.terminal))) this.lastAgent = f.agent ?? f.terminal;
-    if (s?.machine) { if (this.here !== null) { this.here = null; this.hereFrom = null; cx.notify(); } return; }
-    const from = (f?.cwd || s?.folder || home()).replace(/\/+$/, "");
-    if (from === this.hereFrom) return;
-    this.hereFrom = from;
+    // A space on another computer: the project is worked out there, and its home
+    // (printed second) counts as no project, as home does here.
+    const m = s?.machine ?? null;
+    const from = (f?.cwd || s?.folder || (m ? "" : home())).replace(/\/+$/, "");
+    if (`${m}|${from}` === this.hereFrom) return;
+    this.hereFrom = `${m}|${from}`;
     cx.spawn(async (cx) => {
-      const r = await exec("sh", ["-c", 'c=$(git -C "$1" rev-parse --path-format=absolute --git-common-dir 2>/dev/null); case "$c" in */.git) echo "${c%/.git}" ;; *) git -C "$1" rev-parse --show-toplevel 2>/dev/null || echo "$1" ;; esac', "sh", from]).catch(() => null);
-      const here = (r?.stdout.trim() || from).replace(/\/+$/, "");
-      if (here !== this.here) { this.here = here; cx.notify(); }
+      const r = from ? await exec("sh", ["-c", 'c=$(git -C "$1" rev-parse --path-format=absolute --git-common-dir 2>/dev/null); case "$c" in */.git) echo "${c%/.git}" ;; *) git -C "$1" rev-parse --show-toplevel 2>/dev/null || echo "$1" ;; esac; printf "%s\\n" "$HOME"', "sh", from], onM(m)).catch(() => null) : null;
+      if (this.hereFrom !== `${m}|${from}`) return; // moved on meanwhile
+      const [top, theirHome] = (r?.stdout ?? "").split("\n");
+      let here = (top?.trim() || from).replace(/\/+$/, "") || null;
+      if (m && (!here || here === (theirHome ?? "").trim().replace(/\/+$/, ""))) here = null;
+      if (here === this.here && m === HERE.machine) return;
+      this.here = here;
+      HERE.folder = m ? here : null;
+      HERE.machine = m && here ? m : null;
+      await this.loadThere(cx);
+      cx.notify();
     });
   }
 
@@ -513,6 +569,14 @@ export default class Todos extends View {
   async write(slug, folder, items, cx, skipped = this.lists[slug]?.skipped ?? [], opts = this.lists[slug]?.opts ?? defOpts()) {
     const path = `${DIR()}/${slug}.md`, old = this.lists[slug]?.raw ?? null;
     const text = serialize(folder, items, skipped, opts);
+    const m = machineOf(slug);
+    if (m) {
+      const r = await exec("sh", ["-c", THERE_WRITE, "sh", slugOf(folder), text, old ?? "", old != null ? "1" : ""], onM(m)).catch(() => null);
+      if (r?.code !== 0) return this.loadThere(cx); // changed there meanwhile: show theirs
+      this.lists[slug] = { folder, items, skipped, opts, raw: text, machine: m };
+      if (opts.sync) SYNCED.add(folder); else SYNCED.delete(folder);
+      return cx.notify();
+    }
     try {
       await writeTextFile(path, text, old);
       this.lists[slug] = { folder, items, skipped, opts, raw: text };
@@ -539,7 +603,7 @@ export default class Todos extends View {
     this.fileAt[folder] = Date.now();
     this.fromFile[folder] ??= { file: null, items: [] };
     cx.spawn(async (cx) => {
-      const r = await exec("sh", ["-c", TODO_FILE, "sh", folder]).catch(() => null);
+      const r = await exec("sh", ["-c", TODO_FILE, "sh", folder], onM(mOf(folder))).catch(() => null);
       const out = r?.stdout ?? "", nl = out.indexOf("\n");
       const next = nl > 0 ? { file: out.slice(0, nl), items: fileItems(out.slice(nl + 1)) } : { file: null, items: [] };
       const was = this.fileStale[folder];
@@ -552,13 +616,13 @@ export default class Todos extends View {
   suggested(folder) {
     const f = this.fromFile[folder];
     if (!f?.items.length || this.fileStale[folder]) return { file: f?.file, items: [] };
-    const l = this.lists[slugOf(folder)];
+    const l = this.lists[keyOf(folder)];
     const have = new Set([...(l?.items ?? []).map((x) => x.text.toLowerCase()), ...(l?.skipped ?? []).map((x) => x.toLowerCase())]);
     return { file: f.file, items: f.items.filter((x) => !have.has(x.toLowerCase())) };
   }
 
   take(folder, texts, cx) {
-    const slug = slugOf(folder), l = this.lists[slug];
+    const slug = keyOf(folder), l = this.lists[slug];
     cx.spawn(async (cx) => this.write(slug, folder, [...(l?.items ?? []), ...texts.map((text) => ({ done: false, text, due: null, doneOn: null }))], cx));
   }
 
@@ -573,13 +637,13 @@ export default class Todos extends View {
   dropFromFile(folder, text, cx) {
     const f = this.fromFile[folder];
     if (f) this.fromFile[folder] = { ...f, items: f.items.filter((x) => x !== text) };
-    python(["-I", CROSS(), folder, "rm", text]).catch(() => null);
+    cross(folder, "rm", text);
     this.fileAt[folder] = 0;
     cx.notify();
   }
 
   skip(folder, text, cx) {
-    const slug = slugOf(folder), l = this.lists[slug];
+    const slug = keyOf(folder), l = this.lists[slug];
     cx.spawn(async (cx) => this.write(slug, folder, l?.items ?? [], cx, [...(l?.skipped ?? []), text]));
   }
 
@@ -631,7 +695,7 @@ export default class Todos extends View {
       const at = new Set(xs.filter((x) => x.slug === slug).map((x) => x.i));
       this.change(slug, (items) => items.map((y, j) => (at.has(j) && y.done !== on ? { ...y, done: on, doneOn: on ? stamp() : null } : y)), cx);
     }
-    for (const x of xs) if (x.done !== on) { python(["-I", CROSS(), x.folder, on ? "done" : "undo", x.text]).catch(() => null); this.fileAt[x.folder] = 0; }
+    for (const x of xs) if (x.done !== on) { cross(x.folder, on ? "done" : "undo", x.text); this.fileAt[x.folder] = 0; }
     this.unpick();
   }
 
@@ -681,9 +745,10 @@ export default class Todos extends View {
     const xs = [x].flat(), folder = xs[0].folder, task = this.taskFor(xs);
     const first = xs.length > 1 ? `${xs.length} to-dos` : xs[0].text;
     const name = first.length > 28 ? `${first.slice(0, 27)}\u2026` : first;
-    const there = spaces().find((s) => !s.machine && (s.folder ?? "").replace(/\/+$/, "") === folder);
+    const m = mOf(folder);
+    const there = spaces().find((s) => (s.machine ?? null) === m && (s.folder ?? "").replace(/\/+$/, "") === folder);
     if (there) run("tab.new", { space: there.id, name, folder, argv: a.run, task });
-    else run("space.new", { name: this.name(folder), folder, tab: name, argv: a.run, task, machine: "" });
+    else run("space.new", { name: this.name(folder), folder, tab: name, argv: a.run, task, machine: m ?? "" });
     if (there && !there.active) run("space.select", { id: there.id });
     notify({ title: `${a.name} is on it`, body: xs.map((y) => y.text).join("\n"), level: "info" });
   }
@@ -702,7 +767,7 @@ export default class Todos extends View {
   projectChoices(t) {
     const folders = [...new Set([...Object.values(this.lists).map((l) => l.folder), ...spaces().filter((s) => !s.machine).map((s) => (s.folder ?? "").replace(/\/+$/, "")),
       ...(shared("projects.pinned") ?? []), ...(shared("projects.auto") ?? [])].filter((f) => f && f !== home()))];
-    const hereFirst = (f) => (f === this.here ? 0 : this.lists[slugOf(f)]?.items.some((x) => !x.done) ? 1 : 2);
+    const hereFirst = (f) => (f === this.here ? 0 : this.lists[keyOf(f)]?.items.some((x) => !x.done) ? 1 : 2);
     return folders.sort((a, b) => hereFirst(a) - hereFirst(b) || this.name(a).localeCompare(this.name(b)))
       .map((f) => ({ key: f.split("/").pop(), name: this.name(f), color: this.color(f, t) }));
   }
@@ -727,7 +792,7 @@ export default class Todos extends View {
     if (!folder) return;
     const { text: rest, due } = takeDue(text);
     if (!rest) return;
-    const slug = slugOf(folder), l = this.lists[slug];
+    const slug = keyOf(folder), l = this.lists[slug];
     this.input.set_value("");
     this.typed = "";
     cx.spawn(async (cx) => this.write(slug, folder, [...(l?.items ?? []), { done: false, text: rest, due, doneOn: null }], cx));
@@ -753,7 +818,7 @@ export default class Todos extends View {
 
   render(cx) {
     const t = theme();
-    const hereSlug = this.here && slugOf(this.here);
+    const hereSlug = this.here && keyOf(this.here);
     // Only pinned projects (the sidebar's list), and the one you're in.
     // All: the projects Over9k's sidebar pins, and the one you're in; without
     // that sidebar (this panel on its own), every project's list.
@@ -783,7 +848,7 @@ export default class Todos extends View {
     // shaded; a project's name in its colour, its count, and a small Log and
     // Sync icon when they're on.
     const chip = (key, label, n, color, on, fn, folder) => {
-      const o = folder ? this.lists[slugOf(folder)]?.opts ?? defOpts() : null;
+      const o = folder ? this.lists[keyOf(folder)]?.opts ?? defOpts() : null;
       return h_flex().id(`chip-${key}`).h(20).px(7).gap(4).flex_none().items_center().rounded(5).cursor_pointer()
         .text_color(on ? t.foreground : t.muted).when(on, (el) => el.bg(t.raised))
         .hover((s) => s.bg(t.hover).text_color(t.foreground))
@@ -811,7 +876,7 @@ export default class Todos extends View {
             if (multi(e) && this.filter) return; // the row picks it
             this.change(x.slug, (items) => items.map((y, j) => (j === x.i ? { ...y, done: !y.done, doneOn: y.done ? null : stamp() } : y)), cx);
             // Crossed out (or back in) in the project's own TODO.md too, if it lists it.
-            python(["-I", CROSS(), x.folder, x.done ? "undo" : "done", x.text]).catch(() => null);
+            cross(x.folder, x.done ? "undo" : "done", x.text);
             this.fileAt[x.folder] = 0;
           }))
         .child(editing
