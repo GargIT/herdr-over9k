@@ -83,6 +83,10 @@ if [ -f "$1" ]; then
   [ -n "$(find "$lock" -maxdepth 0 -mmin +2 2>/dev/null)" ] && rmdir "$lock" 2>/dev/null
   if mkdir "$lock" 2>/dev/null; then locked=1; else locked= partial=1 size=0; fi
   while [ "$off" -lt "$size" ]; do
+    # 15 s at most, well inside exec's 30 s and leaving time for the subagents'
+    # own files: what's left waits for the next run, and the answer from what
+    # was read isn't kept.
+    [ $(($(date +%s) - now)) -lt 15 ] || { partial=1; break; }
     touch "$lock"
     piece "$1" "$off" "$slice" > "$chunk"
     n=$(wc -c < "$chunk" | tr -d ' ')
