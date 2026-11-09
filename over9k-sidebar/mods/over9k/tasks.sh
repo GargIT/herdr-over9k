@@ -22,41 +22,63 @@ v=7
 key="v$v $(stat -c '%Y %s' "$1" 2>/dev/null || stat -f '%m %z' "$1") $((now / 60))"
 if [ -f "$cache" ] && [ "$(head -n 1 "$cache")" = "$key" ]; then tail -n +2 "$cache"; exit 0; fi
 
+# Its working files go when it ends, even cut short; ones left by a run killed
+# outright (a slice of a transcript, up to 16 MB, and a copy of the state) go a few minutes on.
+state="$cache.state" chunk="$cache.$$.chunk" locked= partial=
+trap '[ -n "$locked" ] && rmdir "$lock" 2>/dev/null; rm -f "$chunk" "$chunk.w" "$cache.$$" "$cache.$$.old" "$cache.$$.all" "$state.$$"' EXIT
+trap 'exit 1' HUP INT TERM
+find "$dir" -maxdepth 1 \( -name '*.chunk*' -o -name '*.old' -o -name '*.state.[0-9]*' \) -mmin +5 -exec rm -f {} + 2>/dev/null
 # The bytes added since the state's offset, whole lines only (one being written
-# waits for the next run).
-state="$cache.state" chunk="$cache.$$.chunk"
+# waits for the next run), in slices of 16 MB at most, the state saved after
+# each: a run cut short keeps what it read, and the next one goes on from there.
 start=$(head -c 4096 "$1" | cksum | cut -d ' ' -f 1)
 sv= off=0 was=
 [ -f "$state" ] && read -r sv off was < "$state"
 size=$(wc -c < "$1" | tr -d ' ')
 case "$off" in ''|*[!0-9]*) off=0 sv= ;; esac
-if [ "$sv" != "v$v" ] || [ "$was" != "$start" ] || [ "$off" -gt "$size" ]; then off=0; : > "$cache.$$.old"
-else tail -n +2 "$state" > "$cache.$$.old"; fi
-tail -c +$((off + 1)) "$1" > "$chunk"
-n=$(wc -c < "$chunk" | tr -d ' ')
-if [ "$n" -gt 0 ] && [ "$(tail -c 1 "$chunk" | od -An -tx1 | tr -d ' \n')" != 0a ]; then
-  n=$((n - $(tail -n 1 "$chunk" | wc -c | tr -d ' ')))
-  head -c "$n" "$chunk" > "$chunk.w" && mv -f "$chunk.w" "$chunk"
+if [ "$sv" != "v$v" ] || [ "$was" != "$start" ] || [ "$off" -gt "$size" ]; then
+  off=0; echo "v$v 0 $start" > "$state.$$" && mv -f "$state.$$" "$state"
 fi
-# What the new lines hold, one fact a line: "E id" a task that ended, "O folder"
-# where its background output goes (a session started again writes to a new
-# one), and as JSON each tool use ({u, n, i}) and tool result ({k, t, r}).
-{ echo "v$v $((off + n)) $start"
-  cat "$cache.$$.old"
-  # Bytes, not characters (LC_ALL=C): the same matches, and some grep (ugrep)
-  # takes a second just to set up .{0,600} in a UTF-8 locale.
-  { LC_ALL=C grep -o '<task-id>[a-z0-9]*</task-id>.\{0,600\}' "$chunk" | LC_ALL=C grep -E '<status>|Monitor expired' | grep -o '^<task-id>[a-z0-9]*' | cut -c10-
-    LC_ALL=C grep -o 'Successfully stopped task: [a-z0-9]*' "$chunk" | cut -d' ' -f4; } 2>/dev/null | sed 's/^/E /'
-  LC_ALL=C grep -o '/[^ "\\<]*/tasks/[a-z0-9]*\.output' "$chunk" 2>/dev/null | tail -n 1 | sed 's|/[^/]*$||; s/^/O /'
-  LC_ALL=C grep -E '"name":"(Bash|Monitor|CronCreate|CronDelete|ScheduleWakeup)"|backgroundTaskId|"taskId":"|humanSchedule|scheduledFor' "$chunk" 2>/dev/null | jq -cR '
-    def some: with_entries(select(.value != null));
-    fromjson? | if .type == "assistant" then .message.content[]? | select(.type == "tool_use")
-        | {u: .id, n: .name, i: (.input | {description, command, prompt, reason, id} | some)}
-      elif .type == "user" and (.toolUseResult | type == "object") then
-        {k: (.message.content | if type == "array" then .[0].tool_use_id // "" else "" end), t: .timestamp,
-         r: (.toolUseResult | {backgroundTaskId, taskId, timeoutMs, scheduledFor, humanSchedule, id, recurring, nextFireAt} | some)}
-      else empty end' 2>/dev/null
-} > "$state.$$" && mv -f "$state.$$" "$state"
+slice=16777216
+# One run at a time reads it (others answer from the state as it is): runs
+# that overlap would read the same slices. A lock left by a run killed
+# outright, untouched for two minutes, is taken over.
+lock="$cache.lock"
+[ -n "$(find "$lock" -maxdepth 0 -mmin +2 2>/dev/null)" ] && rmdir "$lock" 2>/dev/null
+if mkdir "$lock" 2>/dev/null; then locked=1; else locked= partial=1 size=0; fi
+while [ "$off" -lt "$size" ]; do
+  touch "$lock"
+  tail -n +2 "$state" > "$cache.$$.old"
+  tail -c +$((off + 1)) "$1" | head -c "$slice" > "$chunk"
+  n=$(wc -c < "$chunk" | tr -d ' ')
+  if [ "$n" -gt 0 ] && [ "$(tail -c 1 "$chunk" | od -An -tx1 | tr -d ' \n')" != 0a ]; then
+    cut=$((n - $(tail -n 1 "$chunk" | wc -c | tr -d ' ')))
+    if [ "$cut" -gt 0 ]; then n=$cut; head -c "$n" "$chunk" > "$chunk.w" && mv -f "$chunk.w" "$chunk"
+    # A line still being written waits; one longer than a slice is read in pieces.
+    elif [ "$n" -lt "$slice" ]; then break; fi
+  fi
+  [ "$n" -gt 0 ] || break
+  # What the new lines hold, one fact a line: "E id" a task that ended, "O folder"
+  # where its background output goes (a session started again writes to a new
+  # one), and as JSON each tool use ({u, n, i}) and tool result ({k, t, r}).
+  { echo "v$v $((off + n)) $start"
+    cat "$cache.$$.old"
+    # Bytes, not characters (LC_ALL=C): the same matches, and some grep (ugrep)
+    # takes a second just to set up .{0,600} in a UTF-8 locale.
+    { LC_ALL=C grep -o '<task-id>[a-z0-9]*</task-id>.\{0,600\}' "$chunk" | LC_ALL=C grep -E '<status>|Monitor expired' | grep -o '^<task-id>[a-z0-9]*' | cut -c10-
+      LC_ALL=C grep -o 'Successfully stopped task: [a-z0-9]*' "$chunk" | cut -d' ' -f4; } 2>/dev/null | sed 's/^/E /'
+    LC_ALL=C grep -o '/[^ "\\<]*/tasks/[a-z0-9]*\.output' "$chunk" 2>/dev/null | tail -n 1 | sed 's|/[^/]*$||; s/^/O /'
+    LC_ALL=C grep -E '"name":"(Bash|Monitor|CronCreate|CronDelete|ScheduleWakeup)"|backgroundTaskId|"taskId":"|humanSchedule|scheduledFor' "$chunk" 2>/dev/null | jq -cR '
+      def some: with_entries(select(.value != null));
+      fromjson? | if .type == "assistant" then .message.content[]? | select(.type == "tool_use")
+          | {u: .id, n: .name, i: (.input | {description, command, prompt, reason, id} | some)}
+        elif .type == "user" and (.toolUseResult | type == "object") then
+          {k: (.message.content | if type == "array" then .[0].tool_use_id // "" else "" end), t: .timestamp,
+           r: (.toolUseResult | {backgroundTaskId, taskId, timeoutMs, scheduledFor, humanSchedule, id, recurring, nextFireAt} | some)}
+        else empty end' 2>/dev/null
+  } > "$state.$$" && mv -f "$state.$$" "$state" || break
+  off=$((off + n))
+done
 rm -f "$chunk" "$cache.$$.old"
 
 ended=$(grep '^E ' "$state" | cut -c3- | sort -u | tr '\n' ' ')
@@ -79,5 +101,7 @@ grep '^{' "$state" | jq -rs --arg ended " $ended" --arg out "${outdir:+$outdir/}
   | select(.[0] == "cron" or .[0] == "wakeup" or (.[1] as $id | $ended | contains(" " + $id + " ") | not))
   | map(tostring | gsub("[\t\n]"; " ")) | @tsv' 2>/dev/null > "$cache.$$"
 # Its own file, put in place whole: two runs at once wrote over each other's.
+# One answered while another run reads isn't kept: the next run asks again.
+if [ -n "$partial" ]; then cat "$cache.$$"; rm -f "$cache.$$"; exit 0; fi
 { echo "$key"; cat "$cache.$$"; } > "$cache.$$.all" && mv -f "$cache.$$.all" "$cache"; rm -f "$cache.$$"
 tail -n +2 "$cache"

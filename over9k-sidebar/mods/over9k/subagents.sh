@@ -30,31 +30,53 @@ if [ -f "$cache" ] && [ "$(head -n 1 "$cache")" = "$key" ]; then tail -n +2 "$ca
 
 # Each done signal in the parent's transcript, as "id seconds": from the bytes
 # added since the state's offset, whole lines only (one being written waits for
-# the next run), after those found before.
-state="$cache.state" chunk="$cache.$$.chunk"
+# the next run), after those found before. They're read in slices of 16 MB at
+# most, the state saved after each: a run cut short keeps what it read, and the
+# next one goes on from there. Its working files go when it ends, even cut
+# short; ones left by a run killed outright go a few minutes on.
+state="$cache.state" chunk="$cache.$$.chunk" locked= partial=
+trap '[ -n "$locked" ] && rmdir "$lock" 2>/dev/null; rm -f "$chunk" "$chunk.w" "$cache.$$" "$cache.$$.old" "$cache.$$.all" "$state.$$" "$cache.seen.$$"' EXIT
+trap 'exit 1' HUP INT TERM
+find "$cachedir" -maxdepth 1 \( -name '*.chunk*' -o -name '*.old' -o -name '*.state.[0-9]*' \) -mmin +5 -exec rm -f {} + 2>/dev/null
 if [ -f "$1" ]; then
   start=$(head -c 4096 "$1" | cksum | cut -d ' ' -f 1)
   sv= off=0 was=
   [ -f "$state" ] && read -r sv off was < "$state"
   case "$off" in ''|*[!0-9]*) off=0 sv= ;; esac
   size=$(wc -c < "$1" | tr -d ' ')
-  if [ "$sv" != "v$v" ] || [ "$was" != "$start" ] || [ "$off" -gt "$size" ]; then off=0; : > "$cache.$$.old"
-  else tail -n +2 "$state" > "$cache.$$.old"; fi
-  tail -c +$((off + 1)) "$1" > "$chunk"
-  n=$(wc -c < "$chunk" | tr -d ' ')
-  if [ "$n" -gt 0 ] && [ "$(tail -c 1 "$chunk" | od -An -tx1 | tr -d ' \n')" != 0a ]; then
-    n=$((n - $(tail -n 1 "$chunk" | wc -c | tr -d ' ')))
-    head -c "$n" "$chunk" > "$chunk.w" && mv -f "$chunk.w" "$chunk"
+  if [ "$sv" != "v$v" ] || [ "$was" != "$start" ] || [ "$off" -gt "$size" ]; then
+    off=0; echo "v$v 0 $start" > "$state.$$" && mv -f "$state.$$" "$state"
   fi
-  { echo "v$v $((off + n)) $start"
-    cat "$cache.$$.old"
-    grep -E '<task-id>|Successfully stopped task: |agent-message from=' "$chunk" 2>/dev/null | jq -Rr '
-    (try (fromjson | .timestamp // empty | sub("\\.[0-9]+Z$"; "Z") | fromdate) catch empty) as $t
-    | ( (scan("<task-id>[a-z0-9]*</task-id>.{0,600}") | select(test("finished</summary>|<status>(killed|failed|stopped)</status>")) | capture("^<task-id>(?<i>[a-z0-9]*)").i),
-        (scan("Successfully stopped task: [a-z0-9]*") | split(" ")[3]),
-        (scan("agent-message from=\\\\\"[a-z0-9]*") | sub(".*\""; "")) )
-    | "\(.) \($t)"' 2>/dev/null
-  } > "$state.$$" && mv -f "$state.$$" "$state"
+  slice=16777216
+  # One run at a time reads it (others answer from the state as it is): runs
+  # that overlap would read the same slices. A lock left by a run killed
+  # outright, untouched for two minutes, is taken over.
+  lock="$cache.lock"
+  [ -n "$(find "$lock" -maxdepth 0 -mmin +2 2>/dev/null)" ] && rmdir "$lock" 2>/dev/null
+  if mkdir "$lock" 2>/dev/null; then locked=1; else locked= partial=1 size=0; fi
+  while [ "$off" -lt "$size" ]; do
+    touch "$lock"
+    tail -n +2 "$state" > "$cache.$$.old"
+    tail -c +$((off + 1)) "$1" | head -c "$slice" > "$chunk"
+    n=$(wc -c < "$chunk" | tr -d ' ')
+    if [ "$n" -gt 0 ] && [ "$(tail -c 1 "$chunk" | od -An -tx1 | tr -d ' \n')" != 0a ]; then
+      cut=$((n - $(tail -n 1 "$chunk" | wc -c | tr -d ' ')))
+      if [ "$cut" -gt 0 ]; then n=$cut; head -c "$n" "$chunk" > "$chunk.w" && mv -f "$chunk.w" "$chunk"
+      # A line still being written waits; one longer than a slice is read in pieces.
+      elif [ "$n" -lt "$slice" ]; then break; fi
+    fi
+    [ "$n" -gt 0 ] || break
+    { echo "v$v $((off + n)) $start"
+      cat "$cache.$$.old"
+      grep -E '<task-id>|Successfully stopped task: |agent-message from=' "$chunk" 2>/dev/null | jq -Rr '
+      (try (fromjson | .timestamp // empty | sub("\\.[0-9]+Z$"; "Z") | fromdate) catch empty) as $t
+      | ( (scan("<task-id>[a-z0-9]*</task-id>.{0,600}") | select(test("finished</summary>|<status>(killed|failed|stopped)</status>")) | capture("^<task-id>(?<i>[a-z0-9]*)").i),
+          (scan("Successfully stopped task: [a-z0-9]*") | split(" ")[3]),
+          (scan("agent-message from=\\\\\"[a-z0-9]*") | sub(".*\""; "")) )
+      | "\(.) \($t)"' 2>/dev/null
+    } > "$state.$$" && mv -f "$state.$$" "$state" || break
+    off=$((off + n))
+  done
   rm -f "$chunk" "$cache.$$.old"
   signals=$(tail -n +2 "$state" | sort -k1,1 -k2,2n)
 fi
@@ -99,5 +121,7 @@ EOF
 done > "$cache.$$"
 # Its own file, put in place whole: two runs at once (a slow one outlasting the
 # sidebar's wait) wrote over each other's, losing rows.
+# One answered while another run reads isn't kept: the next run asks again.
+if [ -n "$partial" ]; then cat "$cache.$$"; rm -f "$cache.$$"; exit 0; fi
 { echo "$key"; cat "$cache.$$"; } > "$cache.$$.all" && mv -f "$cache.$$.all" "$cache"; rm -f "$cache.$$"
 tail -n +2 "$cache"
