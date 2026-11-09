@@ -63,7 +63,7 @@ command -v facts > /dev/null 2>&1 || facts() {
   if grep -q 'context-1m' "$1" 2>/dev/null; then echo 1; else echo 0; fi
   grep '"type":"assistant"' "$1" 2>/dev/null | tail -n 1 > "$2"; }
 state="$cache.state" chunk="$cache.$$.chunk" locked= partial=
-trap '[ -n "$locked" ] && rmdir "$lock" 2>/dev/null; rm -f "$chunk" "$chunk.w" "$cache.$$" "$chunk.f" "$cache.$$.all" "$state.$$" "$cache.seen.$$" "$cache.$$.reply"' EXIT
+trap '[ -n "$locked" ] && rmdir "$lock" 2>/dev/null; rm -f "$chunk" "$chunk.w" "$cache.$$" "$chunk.f" "$cache.$$.all" "$state.$$" "$cache.seen.$$" "$cache.$$.reply" "$cache.$$".list "$cache.$$".stat "$cache.$$".meta "$cache.$$".fin "$cache.$$".sig "$cache.$$".new "$cache.$$".rows' EXIT
 trap 'exit 1' HUP INT TERM
 find "$cachedir" -maxdepth 1 \( -name '*.chunk*' -o -name '*.old' -o -name '*.state.[0-9]*' \) -mmin +5 -exec rm -f {} + 2>/dev/null
 if [ -f "$1" ]; then
@@ -115,16 +115,33 @@ fi
 # What each subagent's file says, kept with its stamp (a .seen file, a line
 # each, |-separated: id, stamp, model, start, tokens, effort, window, last
 # record, and 1 if it ever replied), so only ones that wrote since are read again.
+# What every one needs is asked once for all of them (a process costs a few ms,
+# more on macOS, and there can be hundreds): the files' stamps, the meta files'
+# descriptions and types, which are marked finished; then joined in one awk.
 seen="$cache.seen"; [ -f "$seen" ] || : > "$seen"
+w="$cache.$$"; : > "$w.list"
 for m in "$dir"/*.meta.json; do
-  [ -f "$m" ] || continue
-  j="${m%.meta.json}.jsonl"
-  [ -f "$j" ] || continue
-  at=$(stat -c %Y "$j" 2>/dev/null || stat -f %m "$j" 2>/dev/null || echo 0)
-  id=$(basename "$j" .jsonl)
-  st="v$v-$(stamp "$j" | tr ' ' _)"
-  row=$(grep "^$id|$st|" "$seen" | tail -n 1)
-  if [ -z "$row" ]; then
+  [ -f "$m" ] && [ -f "${m%.meta.json}.jsonl" ] && printf '%s\n' "${m%.meta.json}" >> "$w.list"
+done
+# (None: nothing to ask, and xargs would run them with none, reading stdin.)
+: > "$w.stat"; : > "$w.meta"; : > "$w.fin"
+if [ -s "$w.list" ]; then
+  if stat -c %Y / > /dev/null 2>&1; then sfmt='-c %n|%Y|%s'; else sfmt='-f %N|%m|%z'; fi
+  sed 's/$/.jsonl/' "$w.list" | tr '\n' '\0' | xargs -0 stat $sfmt > "$w.stat" 2>/dev/null
+  sed 's/$/.meta.json/' "$w.list" | tr '\n' '\0' | xargs -0 jq -r '[input_filename, .description // "", .agentType // ""] | @tsv' > "$w.meta" 2>/dev/null ||
+    while read -r b; do jq -r '[input_filename, .description // "", .agentType // ""] | @tsv' "$b.meta.json" 2>/dev/null; done < "$w.list" > "$w.meta"
+  # Newer Claude Codes mark it done in its meta file too (and unmark it on a resume).
+  sed 's/$/.meta.json/' "$w.list" | tr '\n' '\0' | xargs -0 grep -l '"finished":true' > "$w.fin" 2>/dev/null
+fi
+printf '%s\n' "$signals" > "$w.sig"
+# The ones not seen as they are now: read, and their rows put in the .seen file.
+awk -v v="$v" -v S="$w.stat" '
+  FILENAME == S { n = split($0, a, "|"); b = a[1]; sub(/\.jsonl$/, "", b); st[b] = "v" v "-" a[n - 1] "_" a[n]; next }
+  { split($0, a, "|"); have[a[1] "|" a[2]] = 1 }
+  END { for (b in st) { id = b; sub(/.*\//, "", id); if (!have[id "|" st[b]]) print b "|" st[b] } }' "$w.stat" "$seen" > "$w.new"
+if [ -s "$w.new" ]; then
+  while IFS='|' read -r b st; do
+    j="$b.jsonl"; id="${b##*/}"
     # Its model, its effort (each reply records it) and context window: 1M when
     # its requests asked for that (the context-1m beta), else 200k.
     { read -r model; read -r effort; read -r big; } <<EOF
@@ -136,21 +153,28 @@ EOF
     # Its last record, not its file's time: a session started again rewrites those.
     last=$(tail -n 20 "$j" | jq -r '.timestamp // empty | sub("\\.[0-9]+Z$"; "Z") | fromdate' 2>/dev/null | tail -n 1)
     replied=0; [ -s "$cache.$$.reply" ] && replied=1
-    row="$id|$st|$model|$start|$tokens|$effort|$window|$last|$replied"
-    { grep -v "^$id|" "$seen"; echo "$row"; } > "$seen.$$" && mv -f "$seen.$$" "$seen"
-  fi
-  IFS='|' read -r _ _ model start tokens effort window last replied <<EOF
-$row
-EOF
-  said=$(printf '%s\n' "$signals" | grep "^${id#agent-} " | tail -n 1 | cut -d ' ' -f 2)
-  done=0; [ -n "$said" ] && [ "${last:-0}" -le $((said + 5)) ] && done=1
-  # Newer Claude Codes mark it in its meta file too (and unmark it on a resume).
-  grep -q '"finished":true' "$m" 2>/dev/null && done=1
-  # Never replied two minutes on: not one that runs (a session started again can
-  # write back an old one's files with nothing in them).
-  [ "$done" = 0 ] && [ $((now - at)) -gt 120 ] && [ "$replied" = 0 ] && done=1
-  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$id" "$at" "$(jq -r '[.description // "", .agentType // ""] | @tsv' "$m" 2>/dev/null)" "$model" "$start" "$tokens" "$effort" "$window" "$done"
-done > "$cache.$$"
+    echo "$id|$st|$model|$start|$tokens|$effort|$window|$last|$replied"
+  done < "$w.new" > "$w.rows"
+  awk -v R="$w.rows" 'FILENAME == R { split($0, a, "|"); drop[a[1]] = 1; rows[++n] = $0; next }
+    { split($0, a, "|"); if (!drop[a[1]]) print } END { for (i = 1; i <= n; i++) print rows[i] }' "$w.rows" "$seen" > "$seen.$$" && mv -f "$seen.$$" "$seen"
+fi
+# Done: a signal it wrote nothing after, marked finished, or it never replied
+# two minutes on (not one that runs: a session started again can write back an
+# old one's files with nothing in them).
+awk -v now="$now" -v v="$v" -v S="$w.stat" -v M="$w.meta" -v F="$w.fin" -v E="$seen" -v G="$w.sig" '
+  FILENAME == S { n = split($0, a, "|"); b = a[1]; sub(/\.jsonl$/, "", b); at[b] = a[n - 1]; st[b] = "v" v "-" a[n - 1] "_" a[n]; next }
+  FILENAME == M { b = $0; sub(/\t.*/, "", b); sub(/\.meta\.json$/, "", b); dt[b] = substr($0, index($0, "\t") + 1); next }
+  FILENAME == F { b = $0; sub(/\.meta\.json$/, "", b); fin[b] = 1; next }
+  FILENAME == E { split($0, a, "|"); row[a[1] "|" a[2]] = $0; next }
+  FILENAME == G { split($0, a, " "); if (a[2] != "") said[a[1]] = a[2]; next }
+  { b = $0; id = b; sub(/.*\//, "", id); sid = id; sub(/^agent-/, "", sid)
+    split(row[id "|" st[b]], x, "|"); last = x[8]; if (last == "") last = 0
+    d = 0; if (sid in said && last + 0 <= said[sid] + 5) d = 1
+    if (fin[b]) d = 1
+    t = (b in at) ? at[b] : 0
+    if (!d && now - t > 120 && x[9] == "0") d = 1
+    printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", id, t, dt[b], x[3], x[4], x[5], x[6], x[7], d }' "$w.stat" "$w.meta" "$w.fin" "$seen" "$w.sig" "$w.list" > "$cache.$$"
+rm -f "$w.list" "$w.stat" "$w.meta" "$w.fin" "$w.sig" "$w.new" "$w.rows"
 # Its own file, put in place whole: two runs at once (a slow one outlasting the
 # sidebar's wait) wrote over each other's, losing rows.
 # One answered while another run reads isn't kept: the next run asks again.
