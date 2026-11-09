@@ -34,8 +34,36 @@ if [ -f "$cache" ] && [ "$(head -n 1 "$cache")" = "$key" ]; then tail -n +2 "$ca
 # most, the state saved after each: a run cut short keeps what it read, and the
 # next one goes on from there. Its working files go when it ends, even cut
 # short; ones left by a run killed outright go a few minutes on.
+# macOS's tail and grep go at tens of MB a second, perl at GB: where there's
+# one, it reads a slice (piece file offset bytes) and skips the state's first
+# line (rest file). And unless grep is GNU's or ugrep (faster still), it keeps
+# only the lines a pattern (an ERE that means the same in perl) could match
+# (lines pattern file), for the greps after it to look in.
+if command -v perl > /dev/null 2>&1; then
+  piece() { perl -e 'open F, "<", $ARGV[0] or exit 1; seek F, $ARGV[1], 0; read F, $b, $ARGV[2]; print $b' "$@"; }
+  rest() { perl -ne 'print if $. > 1' "$1"; }
+  lines() { P="$1" perl -ne 'BEGIN { $p = qr/$ENV{P}/ } print if /$p/' "$2"; }
+  # A subagent's file in one go (facts file reply): its last model, its last
+  # effort and 1 if it asked for a 1M context, a line each, and its last reply
+  # into the file named.
+  facts() { A="$2" perl -ne '$m = $1 while /"model":"([^"<|]*)"/g; $e = $1 while /"effort":"([a-z]*)"/g;
+    $c = 1 if /context-1m/; $a = $_ if /"type":"assistant"/;
+    END { print "$m\n$e\n", ($c ? 1 : 0), "\n"; open A, ">", $ENV{A}; print A $a }' "$1"; }
+else
+  piece() { tail -c +$(($2 + 1)) "$1" | head -c "$3"; }
+  rest() { tail -n +2 "$1"; }
+fi
+case "$(grep --version 2>/dev/null | head -n 1)" in
+  *'(GNU grep)'*|ugrep*) unset -f lines facts ;;
+esac
+command -v lines > /dev/null 2>&1 || lines() { LC_ALL=C grep -E "$1" "$2"; }
+command -v facts > /dev/null 2>&1 || facts() {
+  printf '%s\n' "$(grep -o '"model":"[^"<|]*"' "$1" 2>/dev/null | tail -n 1 | cut -d '"' -f 4)" \
+    "$(grep -o '"effort":"[a-z]*"' "$1" 2>/dev/null | tail -n 1 | cut -d '"' -f 4)"
+  if grep -q 'context-1m' "$1" 2>/dev/null; then echo 1; else echo 0; fi
+  grep '"type":"assistant"' "$1" 2>/dev/null | tail -n 1 > "$2"; }
 state="$cache.state" chunk="$cache.$$.chunk" locked= partial=
-trap '[ -n "$locked" ] && rmdir "$lock" 2>/dev/null; rm -f "$chunk" "$chunk.w" "$cache.$$" "$cache.$$.old" "$cache.$$.all" "$state.$$" "$cache.seen.$$"' EXIT
+trap '[ -n "$locked" ] && rmdir "$lock" 2>/dev/null; rm -f "$chunk" "$chunk.w" "$cache.$$" "$chunk.f" "$cache.$$.all" "$state.$$" "$cache.seen.$$" "$cache.$$.reply"' EXIT
 trap 'exit 1' HUP INT TERM
 find "$cachedir" -maxdepth 1 \( -name '*.chunk*' -o -name '*.old' -o -name '*.state.[0-9]*' \) -mmin +5 -exec rm -f {} + 2>/dev/null
 if [ -f "$1" ]; then
@@ -56,8 +84,7 @@ if [ -f "$1" ]; then
   if mkdir "$lock" 2>/dev/null; then locked=1; else locked= partial=1 size=0; fi
   while [ "$off" -lt "$size" ]; do
     touch "$lock"
-    tail -n +2 "$state" > "$cache.$$.old"
-    tail -c +$((off + 1)) "$1" | head -c "$slice" > "$chunk"
+    piece "$1" "$off" "$slice" > "$chunk"
     n=$(wc -c < "$chunk" | tr -d ' ')
     if [ "$n" -gt 0 ] && [ "$(tail -c 1 "$chunk" | od -An -tx1 | tr -d ' \n')" != 0a ]; then
       cut=$((n - $(tail -n 1 "$chunk" | wc -c | tr -d ' ')))
@@ -67,8 +94,8 @@ if [ -f "$1" ]; then
     fi
     [ "$n" -gt 0 ] || break
     { echo "v$v $((off + n)) $start"
-      cat "$cache.$$.old"
-      grep -E '<task-id>|Successfully stopped task: |agent-message from=' "$chunk" 2>/dev/null | jq -Rr '
+      rest "$state"
+      lines '<task-id>|Successfully stopped task: |agent-message from=' "$chunk" 2>/dev/null | jq -Rr '
       (try (fromjson | .timestamp // empty | sub("\\.[0-9]+Z$"; "Z") | fromdate) catch empty) as $t
       | ( (scan("<task-id>[a-z0-9]*</task-id>.{0,600}") | select(test("finished</summary>|<status>(killed|failed|stopped)</status>")) | capture("^<task-id>(?<i>[a-z0-9]*)").i),
           (scan("Successfully stopped task: [a-z0-9]*") | split(" ")[3]),
@@ -77,8 +104,8 @@ if [ -f "$1" ]; then
     } > "$state.$$" && mv -f "$state.$$" "$state" || break
     off=$((off + n))
   done
-  rm -f "$chunk" "$cache.$$.old"
-  signals=$(tail -n +2 "$state" | sort -k1,1 -k2,2n)
+  rm -f "$chunk" "$chunk.f"
+  signals=$(rest "$state" | sort -k1,1 -k2,2n)
 fi
 
 # What each subagent's file says, kept with its stamp (a .seen file, a line
@@ -94,16 +121,17 @@ for m in "$dir"/*.meta.json; do
   st="v$v-$(stamp "$j" | tr ' ' _)"
   row=$(grep "^$id|$st|" "$seen" | tail -n 1)
   if [ -z "$row" ]; then
-    model=$(grep -o '"model":"[^"<|]*"' "$j" 2>/dev/null | tail -n 1 | cut -d '"' -f 4)
+    # Its model, its effort (each reply records it) and context window: 1M when
+    # its requests asked for that (the context-1m beta), else 200k.
+    { read -r model; read -r effort; read -r big; } <<EOF
+$(facts "$j" "$cache.$$.reply")
+EOF
+    window=200000; [ "$big" = 1 ] && window=1000000
     start=$(head -n 1 "$j" | jq -r '.timestamp // empty | sub("\\.[0-9]+Z$"; "Z") | fromdate' 2>/dev/null)
-    tokens=$(grep '"type":"assistant"' "$j" 2>/dev/null | tail -n 1 | jq -r '.message.usage | ((.input_tokens // 0) + (.cache_creation_input_tokens // 0) + (.cache_read_input_tokens // 0))' 2>/dev/null)
-    # Its effort (each reply records it) and context window: 1M when its requests
-    # asked for that (the context-1m beta), else 200k.
-    effort=$(grep -o '"effort":"[a-z]*"' "$j" 2>/dev/null | tail -n 1 | cut -d '"' -f 4)
-    if grep -q 'context-1m' "$j" 2>/dev/null; then window=1000000; else window=200000; fi
+    tokens=$(jq -r '.message.usage | ((.input_tokens // 0) + (.cache_creation_input_tokens // 0) + (.cache_read_input_tokens // 0))' "$cache.$$.reply" 2>/dev/null)
     # Its last record, not its file's time: a session started again rewrites those.
     last=$(tail -n 20 "$j" | jq -r '.timestamp // empty | sub("\\.[0-9]+Z$"; "Z") | fromdate' 2>/dev/null | tail -n 1)
-    replied=0; grep -q '"type":"assistant"' "$j" 2>/dev/null && replied=1
+    replied=0; [ -s "$cache.$$.reply" ] && replied=1
     row="$id|$st|$model|$start|$tokens|$effort|$window|$last|$replied"
     { grep -v "^$id|" "$seen"; echo "$row"; } > "$seen.$$" && mv -f "$seen.$$" "$seen"
   fi

@@ -24,8 +24,25 @@ if [ -f "$cache" ] && [ "$(head -n 1 "$cache")" = "$key" ]; then tail -n +2 "$ca
 
 # Its working files go when it ends, even cut short; ones left by a run killed
 # outright (a slice of a transcript, up to 16 MB, and a copy of the state) go a few minutes on.
+# macOS's tail and grep go at tens of MB a second, perl at GB: where there's
+# one, it reads a slice (piece file offset bytes) and skips the state's first
+# line (rest file). And unless grep is GNU's or ugrep (faster still), it keeps
+# only the lines a pattern (an ERE that means the same in perl) could match
+# (lines pattern file), for the greps after it to look in.
+if command -v perl > /dev/null 2>&1; then
+  piece() { perl -e 'open F, "<", $ARGV[0] or exit 1; seek F, $ARGV[1], 0; read F, $b, $ARGV[2]; print $b' "$@"; }
+  rest() { perl -ne 'print if $. > 1' "$1"; }
+  lines() { P="$1" perl -ne 'BEGIN { $p = qr/$ENV{P}/ } print if /$p/' "$2"; }
+else
+  piece() { tail -c +$(($2 + 1)) "$1" | head -c "$3"; }
+  rest() { tail -n +2 "$1"; }
+fi
+case "$(grep --version 2>/dev/null | head -n 1)" in
+  *'(GNU grep)'*|ugrep*) lines() { LC_ALL=C grep -E "$1" "$2"; } ;;
+esac
+command -v lines > /dev/null 2>&1 || lines() { LC_ALL=C grep -E "$1" "$2"; }
 state="$cache.state" chunk="$cache.$$.chunk" locked= partial=
-trap '[ -n "$locked" ] && rmdir "$lock" 2>/dev/null; rm -f "$chunk" "$chunk.w" "$cache.$$" "$cache.$$.old" "$cache.$$.all" "$state.$$"' EXIT
+trap '[ -n "$locked" ] && rmdir "$lock" 2>/dev/null; rm -f "$chunk" "$chunk.w" "$cache.$$" "$chunk.f" "$cache.$$.all" "$state.$$"' EXIT
 trap 'exit 1' HUP INT TERM
 find "$dir" -maxdepth 1 \( -name '*.chunk*' -o -name '*.old' -o -name '*.state.[0-9]*' \) -mmin +5 -exec rm -f {} + 2>/dev/null
 # The bytes added since the state's offset, whole lines only (one being written
@@ -48,8 +65,7 @@ lock="$cache.lock"
 if mkdir "$lock" 2>/dev/null; then locked=1; else locked= partial=1 size=0; fi
 while [ "$off" -lt "$size" ]; do
   touch "$lock"
-  tail -n +2 "$state" > "$cache.$$.old"
-  tail -c +$((off + 1)) "$1" | head -c "$slice" > "$chunk"
+  piece "$1" "$off" "$slice" > "$chunk"
   n=$(wc -c < "$chunk" | tr -d ' ')
   if [ "$n" -gt 0 ] && [ "$(tail -c 1 "$chunk" | od -An -tx1 | tr -d ' \n')" != 0a ]; then
     cut=$((n - $(tail -n 1 "$chunk" | wc -c | tr -d ' ')))
@@ -58,17 +74,19 @@ while [ "$off" -lt "$size" ]; do
     elif [ "$n" -lt "$slice" ]; then break; fi
   fi
   [ "$n" -gt 0 ] || break
+  # Only the lines any grep below could match.
+  lines '<task-id>|Successfully stopped task: |/tasks/|"name":"(Bash|Monitor|CronCreate|CronDelete|ScheduleWakeup)"|backgroundTaskId|"taskId":"|humanSchedule|scheduledFor' "$chunk" > "$chunk.f" 2>/dev/null
   # What the new lines hold, one fact a line: "E id" a task that ended, "O folder"
   # where its background output goes (a session started again writes to a new
   # one), and as JSON each tool use ({u, n, i}) and tool result ({k, t, r}).
   { echo "v$v $((off + n)) $start"
-    cat "$cache.$$.old"
+    rest "$state"
     # Bytes, not characters (LC_ALL=C): the same matches, and some grep (ugrep)
     # takes a second just to set up .{0,600} in a UTF-8 locale.
-    { LC_ALL=C grep -o '<task-id>[a-z0-9]*</task-id>.\{0,600\}' "$chunk" | LC_ALL=C grep -E '<status>|Monitor expired' | grep -o '^<task-id>[a-z0-9]*' | cut -c10-
-      LC_ALL=C grep -o 'Successfully stopped task: [a-z0-9]*' "$chunk" | cut -d' ' -f4; } 2>/dev/null | sed 's/^/E /'
-    LC_ALL=C grep -o '/[^ "\\<]*/tasks/[a-z0-9]*\.output' "$chunk" 2>/dev/null | tail -n 1 | sed 's|/[^/]*$||; s/^/O /'
-    LC_ALL=C grep -E '"name":"(Bash|Monitor|CronCreate|CronDelete|ScheduleWakeup)"|backgroundTaskId|"taskId":"|humanSchedule|scheduledFor' "$chunk" 2>/dev/null | jq -cR '
+    { LC_ALL=C grep -o '<task-id>[a-z0-9]*</task-id>.\{0,600\}' "$chunk.f" | LC_ALL=C grep -E '<status>|Monitor expired' | grep -o '^<task-id>[a-z0-9]*' | cut -c10-
+      LC_ALL=C grep -o 'Successfully stopped task: [a-z0-9]*' "$chunk.f" | cut -d' ' -f4; } 2>/dev/null | sed 's/^/E /'
+    LC_ALL=C grep -o '/[^ "\\<]*/tasks/[a-z0-9]*\.output' "$chunk.f" 2>/dev/null | tail -n 1 | sed 's|/[^/]*$||; s/^/O /'
+    LC_ALL=C grep -E '"name":"(Bash|Monitor|CronCreate|CronDelete|ScheduleWakeup)"|backgroundTaskId|"taskId":"|humanSchedule|scheduledFor' "$chunk.f" 2>/dev/null | jq -cR '
       def some: with_entries(select(.value != null));
       fromjson? | if .type == "assistant" then .message.content[]? | select(.type == "tool_use")
           | {u: .id, n: .name, i: (.input | {description, command, prompt, reason, id} | some)}
@@ -79,7 +97,7 @@ while [ "$off" -lt "$size" ]; do
   } > "$state.$$" && mv -f "$state.$$" "$state" || break
   off=$((off + n))
 done
-rm -f "$chunk" "$cache.$$.old"
+rm -f "$chunk" "$chunk.f"
 
 ended=$(grep '^E ' "$state" | cut -c3- | sort -u | tr '\n' ' ')
 outdir=$(grep '^O ' "$state" | tail -n 1 | cut -c3-)
