@@ -76,6 +76,11 @@ const FALLBACK = 60000;
 // How often each GitHub repo is fetched (so ↓ is current) and its pull requests
 // counted. Git never asks for a password here: it fails instead.
 const REMOTE = 300000;
+// The code hosts whose repos get badges: their name and where each page lives.
+const HOSTS = {
+  github: { name: "GitHub", prs: "/pulls", issues: "/issues", stars: "/stargazers" },
+  gitlab: { name: "GitLab", prs: "/-/merge_requests", issues: "/-/issues", stars: "/-/starrers" },
+};
 const QUIET = ["GIT_TERMINAL_PROMPT=0", "GIT_SSH_COMMAND=ssh -o BatchMode=yes"];
 // Folders in a code folder that are never offered as projects (by name; unpin
 // or hide one from its right-click menu instead), and how often new ones are looked for.
@@ -351,7 +356,7 @@ export default class Spaces extends View {
     this.prs = {}; // "owner/repo" -> { open, review }: open pull requests, those asking you
     this.write = {}; // "owner/repo" -> you can push there (yours, or your team's)
     this.repoInfo = {}; // "owner/repo" -> { stars, issues }: its stars and open issues on GitHub
-    this.me = null; // your GitHub login
+    this.me = {}; // your login per host: { github, gitlab }
     this.armed = null; // ↑ clicked once: { repo, until }; a second click pushes
     this.sel = new Set(); // Ctrl+clicked rows: "s:<space>", "p:<pane>", "d:<project folder>"
     // Keys bound to this mod (keys.json): ctrl-shift-w is "over9k.close-tab".
@@ -2047,12 +2052,14 @@ export default class Spaces extends View {
           info.behind = Math.abs(parseInt(b, 10)) || 0;
         }
       }
-      // A GitHub remote (origin first) becomes a link to the repo's page.
+      // A GitHub or GitLab remote (origin first) becomes a link to the repo's page.
       const urls = (await exec("git", ["remote", "-v"], { cwd, on })).stdout.split("\n")
         .map((l) => l.split(/\s+/)).filter(([n, , kind]) => kind === "(fetch)").sort(([a], [b]) => (b === "origin") - (a === "origin"));
       for (const [, url] of urls) {
         const m = /github\.com[:/]+([^/]+\/[^/]+?)(?:\.git)?\/?$/.exec(url ?? "");
-        if (m) { info.web = `https://github.com/${m[1]}`; info.slug = m[1]; break; }
+        if (m) { info.web = `https://github.com/${m[1]}`; info.slug = m[1]; info.host = "github"; break; }
+        const l = /gitlab\.com[:/]+([^/]+(?:\/[^/]+?)+?)(?:\.git)?\/?$/.exec(url ?? "");
+        if (l) { info.web = `https://gitlab.com/${l[1]}`; info.slug = l[1]; info.host = "gitlab"; break; }
       }
       this.git[key] = info;
       if (!on) this.watch(repo, cx);
@@ -2304,13 +2311,13 @@ export default class Spaces extends View {
     const pr = g.slug && this.prs[g.slug];
     if (o.prs && pr?.open) out.push(this.action(h_flex().id(`pr-${g.repo}`).gap(2).items_center().text_color(pr.review ? t.blocked : t.dim), g, t,
       pr.review ? `${plural(pr.open, "pull request")}, ${pr.review} needs your review` : `Open ${plural(pr.open, "pull request")}`,
-      (cx) => cx.open_url(`${g.web}/pulls`)).child(svg("mods/over9k/pull-request.svg").size(11)).child(String(pr.open)));
+      (cx) => cx.open_url(`${g.web}${HOSTS[g.host].prs}`)).child(svg("mods/over9k/pull-request.svg").size(11)).child(String(pr.open)));
     const info = g.slug && this.write[g.slug] && this.repoInfo[g.slug];
     if (o.issues && info?.issues) out.push(this.action(h_flex().id(`issues-${g.repo}`).gap(2).items_center().text_color(t.dim), g, t,
-      `Open ${plural(info.issues, "issue")}`, (cx) => cx.open_url(`${g.web}/issues`))
+      `Open ${plural(info.issues, "issue")}`, (cx) => cx.open_url(`${g.web}${HOSTS[g.host].issues}`))
       .child(svg("mods/over9k/issue.svg").size(11)).child(String(info.issues)));
     if (o.stars && info?.stars) out.push(this.action(h_flex().id(`stars-${g.repo}`).gap(2).items_center().text_color(t.dim), g, t,
-      `${plural(info.stars, "star")} on GitHub`, (cx) => cx.open_url(`${g.web}/stargazers`))
+      `${plural(info.stars, "star")} on ${HOSTS[g.host].name}`, (cx) => cx.open_url(`${g.web}${HOSTS[g.host].stars}`))
       .child(svg("mods/over9k/star.svg").size(11)).child(String(info.stars)));
     return out.length ? [h_flex().flex_none().gap(3).items_center().text_size(11.5).children(out)] : [];
   }
@@ -2329,7 +2336,7 @@ export default class Spaces extends View {
   canPush(g) {
     if (g.slug && this.write[g.slug] === false) return false;
     const owner = g.slug?.split("/")[0];
-    return Boolean(this.me && owner === this.me) || !["main", "master"].includes(g.branch);
+    return Boolean(owner && owner === this.me[g.host]) || !["main", "master"].includes(g.branch);
   }
 
   push(g, cx) {
@@ -2372,36 +2379,63 @@ export default class Spaces extends View {
     wait(cx);
   }
 
-  // Each GitHub repo in the list, one after another: fetch, then count its open
+  async githubCounts(g) {
+    if (!this.me.github) this.me.github = (await exec("gh", ["api", "user", "--jq", ".login"])).stdout.trim() || null;
+    const me = this.me.github;
+    const v = await exec("gh", ["repo", "view", g.slug, "--json", "viewerPermission,stargazerCount,issues",
+      "--jq", "[.viewerPermission, .stargazerCount, .issues.totalCount] | @tsv"]);
+    if (v.code === 0) {
+      const [perm, stars, issues] = v.stdout.trim().split("\t");
+      this.write[g.slug] = ["ADMIN", "MAINTAIN", "WRITE"].includes(perm);
+      this.repoInfo[g.slug] = { stars: Number(stars) || 0, issues: Number(issues) || 0 };
+    }
+    const r = await exec("gh", ["pr", "list", "--repo", g.slug, "--state", "open", "--limit", "100", "--json", "number,reviewRequests,author"]);
+    if (r.code === 0) {
+      // Someone else's project you only cloned: just the PRs that involve you.
+      const list = JSON.parse(r.stdout).filter((p) => this.write[g.slug] !== false || p.author?.login === me
+        || (p.reviewRequests ?? []).some((q) => q.login === me));
+      this.prs[g.slug] = { open: list.length, review: list.filter((p) => (p.reviewRequests ?? []).some((q) => q.login === me)).length };
+    }
+  }
+
+  // GitLab through glab: a project's stars and open issues, its access level (30
+  // and up can push) and its open merge requests. A merge request you wrote isn't
+  // waiting for your review, even though GitLab lists you among its reviewers.
+  async gitlabCounts(g) {
+    if (!this.me.gitlab) this.me.gitlab = JSON.parse((await exec("glab", ["api", "user"])).stdout).username || null;
+    const me = this.me.gitlab;
+    const v = await exec("glab", ["api", `projects/${encodeURIComponent(g.slug)}`]);
+    if (v.code === 0) {
+      const d = JSON.parse(v.stdout);
+      const level = Math.max(d.permissions?.project_access?.access_level ?? 0, d.permissions?.group_access?.access_level ?? 0);
+      this.write[g.slug] = level >= 30;
+      this.repoInfo[g.slug] = { stars: d.star_count || 0, issues: d.open_issues_count || 0 };
+    }
+    const r = await exec("glab", ["mr", "list", "--repo", g.slug, "--per-page", "100", "-F", "json"]);
+    if (r.code === 0) {
+      const asked = (m) => m.author?.username !== me && (m.reviewers ?? []).some((q) => q.username === me);
+      const list = JSON.parse(r.stdout).filter((m) => this.write[g.slug] !== false || m.author?.username === me || asked(m));
+      this.prs[g.slug] = { open: list.length, review: list.filter(asked).length };
+    }
+  }
+
+  // Each repo in the list, one after another: fetch, then count its open
   // PRs, open issues and stars.
   refreshRemote(cx) {
     if (this.remoteBusy) return;
     this.remoteBusy = true;
     cx.spawn(async (cx) => {
       try {
-        if (!this.me) this.me = (await exec("gh", ["api", "user", "--jq", ".login"])).stdout.trim() || null;
         const seen = new Set();
         for (const [k, g] of Object.entries(this.git)) {
           if (!g?.slug || seen.has(g.repo)) continue;
           seen.add(g.repo);
-          // Fetched where the repo is (another computer's over SSH); its PRs come from GitHub.
+          // Fetched where the repo is (another computer's over SSH); its PRs come from its host.
           const on = JSON.parse(k)[0];
           if (on && !this.machines.some((x) => x.name === on && x.state === "connected")) continue;
-          await exec("env", [...QUIET, "git", "fetch", "--quiet"], { cwd: g.top, on: on ?? undefined });
-          const v = await exec("gh", ["repo", "view", g.slug, "--json", "viewerPermission,stargazerCount,issues",
-            "--jq", "[.viewerPermission, .stargazerCount, .issues.totalCount] | @tsv"]);
-          if (v.code === 0) {
-            const [perm, stars, issues] = v.stdout.trim().split("\t");
-            this.write[g.slug] = ["ADMIN", "MAINTAIN", "WRITE"].includes(perm);
-            this.repoInfo[g.slug] = { stars: Number(stars) || 0, issues: Number(issues) || 0 };
-          }
-          const r = await exec("gh", ["pr", "list", "--repo", g.slug, "--state", "open", "--limit", "100", "--json", "number,reviewRequests,author"]);
-          if (r.code === 0) {
-            // Someone else's project you only cloned: just the PRs that involve you.
-            const list = JSON.parse(r.stdout).filter((p) => this.write[g.slug] !== false || p.author?.login === this.me
-              || (p.reviewRequests ?? []).some((q) => q.login === this.me));
-            this.prs[g.slug] = { open: list.length, review: list.filter((p) => (p.reviewRequests ?? []).some((q) => q.login === this.me)).length };
-          }
+          try { await (g.host === "gitlab" ? this.gitlabCounts(g) : this.githubCounts(g)); } catch {}
+          // After the counts: a fetch that hangs (SSH to the host unreachable) must not hide them.
+          try { await exec("env", [...QUIET, "git", "fetch", "--quiet"], { cwd: g.top, on: on ?? undefined, timeout: 20000 }); } catch {}
           this.refreshGit(Object.keys(this.git).filter((x) => this.git[x]?.repo === g.repo), cx);
         }
       } catch {}
@@ -2501,11 +2535,11 @@ export default class Spaces extends View {
   ghLink(g, t) {
     if (!g?.web) return null;
     return this.explained(div().id(`web-${g.web}`).flex_none().ml(-5).p(2).rounded(4).cursor_pointer().text_color(t.dim), g,
-      "Open in GitHub")
+      `Open in ${HOSTS[g.host].name}`)
       .hover((s) => s.bg(t.hover).text_color(t.foreground))
       .on_mouse_down("left", (_e, cx) => cx.stop_propagation())
       .on_click((_e, cx) => { cx.stop_propagation(); cx.open_url(g.web); })
-      .child(svg("mods/over9k/github.svg").size(13));
+      .child(svg(`mods/over9k/${g.host}.svg`).size(13));
   }
 
   // A device's pinned default (the Pin in over9k-new-menu, shared "over9k.startPin"): a

@@ -32,7 +32,7 @@ Left to right. All colours are theme names (`canvas`, `chrome`, `background`,
     - Each computer's header: "This computer", or a machine's name, with a
       monitor or server icon, a green connection dot, a fold chevron and a +.
     - Each project as a 30px row, its name in its own colour, then its
-      badges: a GitHub mark, the uncommitted count (`ansi3`), ↑ ahead
+      badges: a GitHub or GitLab mark, the uncommitted count (`ansi3`), ↑ ahead
       (`ansi2`) and ↓ behind (`ansi1`), open pull requests (a PR icon and
       a count, red when your review is wanted), and on your own repos open
       issues and stars (an icon and a count each).
@@ -105,7 +105,7 @@ Left to right. All colours are theme names (`canvas`, `chrome`, `background`,
     off…, splits, close. A CLI's and a tab's menus have Open folder too.
   - Shift-click picks a range and Ctrl or Cmd-click picks one more. Right-click
     a picked row to act on all of them.
-  - On a project's badges: the GitHub mark opens the repo, the count opens
+  - On a project's badges: the GitHub or GitLab mark opens the repo, the count opens
     Changes, ↑ pushes (click twice), ↓ pulls.
   - The + on a computer opens `over9k-new-menu`: start a CLI or an agent, resume
     a past chat, or start Pi on another model.
@@ -191,7 +191,7 @@ Left to right. All colours are theme names (`canvas`, `chrome`, `background`,
     and `hc` (`read`, `send`, `kill`, `run`).
 - **Programs:**
   - `sh` runs the scripts. `git` reads status and fetches every 5 minutes.
-  - `gh` counts open PRs, if installed. `jq` is used by the scripts.
+  - `gh` (GitHub) or `glab` (GitLab) counts open PRs or MRs, if installed. `jq` is used by the scripts.
   - Python 3 runs the Timeline reader and the TODO.md sync. `ps`, `curl` (local
     model servers) and `kill` are used too.
 - **Outside Herdr**, turned on from Options:

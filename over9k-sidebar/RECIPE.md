@@ -24,7 +24,7 @@ All colours are theme names.
   chip, such as "Qwen3.8".
 - **Project rows**, 30px, 8px radius, the name in the project's colour. The open
   space is on `selected`. After the name:
-  - the GitHub mark
+  - the GitHub or GitLab mark
   - uncommitted files (`ansi3`)
   - ↑ ahead (`ansi2`) and ↓ behind (`ansi1`)
   - open pull requests (red when your review is wanted)
@@ -68,10 +68,10 @@ All colours are theme names.
     pin/unpin, Hand off…, splits, zoom, close. Closing asks first, through
     `over9k-close`.
 - **Git badges:**
-  - The GitHub mark opens the repo.
+  - The GitHub or GitLab mark opens the repo.
   - The uncommitted count opens Changes.
   - ↑ pushes (click twice). ↓ pulls (`--ff-only`).
-  - Every 5 minutes it runs `git fetch`, and `gh` counts pull requests, issues and stars.
+  - Every 5 minutes it runs `git fetch`, and `gh` (GitHub) or `glab` (GitLab) counts pull or merge requests, issues and stars.
 - **What an agent started:** click its chip to show or hide the list. Click a
   subagent to view it, Alt-click to view it in the side panel, × to stop it.
 - **clear + recap** sends `/clear` with a recap brief, so the agent restarts
@@ -115,7 +115,7 @@ All colours are theme names.
     `layout`.
   - `run`: `space.select`, `tab.select`, `pane.focus`, `agent.focus`, `tab.new`,
     `space.new`, `layout.set` / `select` / `show` / `hide`, `terminal.peek`.
-  - `exec` (`sh`, `git`, `gh`, `ps`, Python), `hc` (`read`, `send`, `kill`,
+  - `exec` (`sh`, `git`, `gh`, `glab`, `ps`, Python), `hc` (`read`, `send`, `kill`,
     `run`), `watchFolder`, `readTextFile`, `openOverlay`, `notify`,
     `nextCommand`.
   - It writes `shared` keys for the others: `projects.pinned`,

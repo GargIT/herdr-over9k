@@ -285,7 +285,7 @@ export default class SidebarOptions extends View {
       .child(this.sample(t, this.spaceSample(t, o)))
       .child(group("Git", "From the repo on this computer.", false))
       .children(SPACE_ITEMS.map(check))
-      .child(group("GitHub", "For repos on GitHub. Counts need gh, signed in; checked every 5 minutes.", false))
+      .child(group("GitHub", "For repos on GitHub or GitLab. Counts need gh or glab, signed in; checked every 5 minutes.", false))
       .children(GITHUB_ITEMS.map(check));
     if (this.page === "agents") return page
       .child(group("Agent rows", "Compact: one line. Expanded: details below the name (always, in Agents \u203a Status).", true))

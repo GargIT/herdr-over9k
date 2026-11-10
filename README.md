@@ -237,11 +237,12 @@ Over9k has no server of its own and collects nothing. It reads your agents'
 conversation files, your git repos and Herdr's state on your computer, and only
 reaches the network through your own tools, in three ways:
 
-- **git:** every 5 minutes it fetches each project with a GitHub remote, to show
-  how far ahead or behind it is. It pushes and pulls only when you click.
-- **gh:** in the same pass, if `gh` is installed, it counts open pull requests
-  and checks whether your review is wanted, and on your own repos counts open
-  issues and stars.
+- **git:** every 5 minutes it fetches each project with a GitHub or GitLab
+  remote, to show how far ahead or behind it is. It pushes and pulls only when
+  you click.
+- **gh / glab:** in the same pass, if `gh` (GitHub) or `glab` (GitLab) is
+  installed, it counts open pull or merge requests and checks whether your
+  review is wanted, and on your own repos counts open issues and stars.
 - **curl:** the + menu checks whether the local model servers in Pi's list are
   up.
 
